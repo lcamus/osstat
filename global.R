@@ -26,18 +26,21 @@ for (i in h) {
 
 h <- homepage %>% html_nodes("#container > div > div")
 getId <- function(x) {nrow(nodes)+x}
-#getLabel <- function(x) {x["title"]}
+getLabel <- function(x) {x %>% html_text()}
+getUrl <- function(x) {x %>% html_attrs()}
 for (i in 1:length(h)) {
   nodes <- rbind(nodes,
                  data.frame(
-#                   id=sapply(seq_along(h[i] %>% html_nodes("a")),function(x){nrow(nodes)+x}),
                    id=sapply(seq_along(h[i] %>% html_nodes("a")),function(x){getId(x)}),
-                   label=sapply(h[i] %>% html_nodes("a") %>% html_text(),function(x){x}),
+                   label=sapply(h[i] %>% html_nodes("a"),function(x){getLabel(x)}),
                    group="Indicators",
                    value=1,
-                   title=sapply(seq_along(h[i]),paste0("#",getId(x),"<br>")),
-                   url=sapply(h[i] %>% html_nodes("a") %>% html_attrs(),function(x){x}))
+                   title=sapply(seq_along(h[i] %>% html_nodes("a")),function(x){paste0("#",getId(x),"<br>",
+                                                                                       getLabel((h[i] %>% html_nodes("a"))[x]),"<br>",
+                                                                                       getUrl((h[i] %>% html_nodes("a"))[x]))}),
+                   url=sapply(h[i] %>% html_nodes("a"),function(x){getUrl(x)})
                  )
+  )
   edges <- rbind(edges,
                  data.frame(
                    from=i,
