@@ -25,18 +25,17 @@ getAllData <- function(date, period) {
 }
 
 getData <- function(date, period, object, method) {
-  base <- "https://utils.euro-area-statistics.org/admin/piwik/?module=API"
+  
   filter_limit <- "filter_limit=-1"
-  idSite <- "idSite=1"
-  format <- "format=CSV"
-  token_auth <- as.character(read.table("private/token",header=F)[,])
   date <- paste("date=", date, sep="")
   period <- paste("period=", period, sep="")
   method <- paste("method=", object, ".", method, sep="")
-  url <- paste(base, method, idSite, date, period, format, token_auth, filter_limit, sep="&")
+  url <- paste(base, method, paste0("idSite=",idSite), date, period, paste0("format=",format), paste0("token_auth=",token_auth), filter_limit, sep="&")
   df <- read.csv(url(description=url, open="", blocking=TRUE, encoding="UTF-16",method="default"),header=T,sep=",")
   l <- list(paste(date,period,sep="+"), df)
+  
   return(l)
+  
 }
 
 useData <- function(alldata, date, period, object, method) {
