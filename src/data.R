@@ -1,6 +1,4 @@
 
-#initialisation de la structure
-
 getAllData <- function(date, period) {
   m <- list()
   m[["UserCountry"]] <- c("getCountry","getContinent","getRegion","getCity")
@@ -24,19 +22,29 @@ getAllData <- function(date, period) {
   return(l)
 }
 
-getData <- function(date, period, object, method) {
+getData <- function(date, object, method, hideColumns, period, filter_limit) {
   
-  filter_limit <- "filter_limit=-1"
+  if (missing(filter_limit)) filter_limit <- "-1"
+  if (missing(period)) period <- "day"
   date <- paste("date=", date, sep="")
-  period <- paste("period=", period, sep="")
   method <- paste("method=", object, ".", method, sep="")
-  url <- paste(base, method, paste0("idSite=",idSite), date, period, paste0("format=",format), paste0("token_auth=",token_auth), filter_limit, sep="&")
-  df <- read.csv(url(description=url, open="", blocking=TRUE, encoding="UTF-16",method="default"),header=T,sep=",")
-  l <- list(paste(date,period,sep="+"), df)
-  
-  return(l)
+  u <- paste(base,
+               method,
+               paste0("idSite=",idSite),
+               date,
+               paste0("period=",period),
+               paste0("format=",format),
+               paste0("token_auth=",token_auth),
+               paste0("filter_limit=",filter_limit),
+               sep="&")
+  print(u)
+  d[[object]][method] <- cbind(date=date,
+                                   read.csv(url(description=u, open="", blocking=TRUE, encoding="UTF-16",method="default"),header=T,sep=",")
+  )
   
 }
+
+getData("2017-04-18","UserCountry","getCountry", hideColumns="nb_visits_converted")
 
 useData <- function(alldata, date, period, object, method) {
   return(alldata[[object]][[method]][[1]][[2]])
