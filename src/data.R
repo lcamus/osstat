@@ -1,4 +1,5 @@
 
+
 getAllData <- function(date, period) {
   m <- list()
   m[["UserCountry"]] <- c("getCountry","getContinent","getRegion","getCity")
@@ -22,29 +23,39 @@ getAllData <- function(date, period) {
   return(l)
 }
 
-getData <- function(date, object, method, hideColumns, period, filter_limit) {
+getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode) {
   
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(period)) period <- "day"
-  date <- paste("date=", date, sep="")
-  method <- paste("method=", object, ".", method, sep="")
+  if (missing(updatemode)) updatemode <- FALSE
   u <- paste(base,
-               method,
+               paste("method=", object, ".", method, sep=""),
                paste0("idSite=",idSite),
-               date,
+               paste("date=", date, sep=""),
                paste0("period=",period),
                paste0("format=",format),
                paste0("token_auth=",token_auth),
                paste0("filter_limit=",filter_limit),
+               paste0("hideColumns=",hideColumns),
                sep="&")
-  print(u)
-  d[[object]][method] <- cbind(date=date,
-                                   read.csv(url(description=u, open="", blocking=TRUE, encoding="UTF-16",method="default"),header=T,sep=",")
-  )
+  
+  updatable <- nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0
+  if (!updatable |(updatable & updatemode)) {
+    df <- cbind(date=date, read.csv(url(description=u, open="", blocking=TRUE, encoding="UTF-16",method="default"),header=T,sep=","))
+    df <- df[,!colnames(df) %in% fieldstoremove]
+  }
+  else
+    return
+  
+  if (!updatable) {
+    d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
+  } else {
+    d[[object]][[method]][d[[object]][[method]]$date==date,] <- df
+  }
   
 }
 
-getData("2017-04-18","UserCountry","getCountry", hideColumns="nb_visits_converted")
+#getData("2017-04-19","UserCountry","getCountry", hideColumns="nb_visits_converted", update=T)
 
 useData <- function(alldata, date, period, object, method) {
   return(alldata[[object]][[method]][[1]][[2]])
@@ -69,4 +80,4 @@ samples <- function() {
 }
 
 
-eas = getAllData("today", "year")
+#eas = getAllData("today", "year")

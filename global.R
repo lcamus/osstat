@@ -6,11 +6,17 @@ loadPackages("visNetwork")
 
 #variables partagées :
 
+fdata <- "data/d.RData"
 base <- "https://utils.euro-area-statistics.org/admin/piwik/?module=API"
 idSite <- "1"
 format <- "CSV"
 token_auth <- as.character(read.table("private/token",header=F)[,])
-d <- list(UserCountry=list(getCountry=data.frame(), getContinent=data.frame(), getRegion=data.frame(), getCity=data.frame()))
+if (exists(fdata)) {
+  load(fdata)
+} else {
+  d <<- list(UserCountry=list(getCountry=data.frame(), getContinent=data.frame(), getRegion=data.frame(), getCity=data.frame()))
+}
+fieldstoremove <- c("metadata_logo","metadata_segment","metadata_logoWidth","metadata_logoHeight")  
 
 url_root <- "https://www.euro-area-statistics.org"
 nodes <- data.frame()
@@ -26,6 +32,6 @@ visNetwork(nodes, edges, height="700px", width="100%") %>%
 
 # get data :
 source("src/data.R")
-
+save(d, file=fdata)
 
 
