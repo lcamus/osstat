@@ -1,34 +1,12 @@
 
 collectData <- function(from, to) {
-  days <- seq(from=as.Date(from), to=as.Date(to),by='days' )
+  
+  days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
   for (object in names(d))
     for (method in names(d[[object]]))
       for (day in seq_along(days))
         getData(day, object, method, update=F)
-}
-
-getAllData <- function(date, period) {
-  m <- list()
-  m[["UserCountry"]] <- c("getCountry","getContinent","getRegion","getCity")
-  m[["UserLanguage"]] <- c("getLanguage","getLanguageCode")
-  m[["VisitFrequency"]] <- c("get")
-  m[["VisitTime"]] <- c("getVisitInformationPerLocalTime","getByDayOfWeek")
-  m[["VisitorInterest"]] <- c("getNumberOfVisitsPerVisitDuration","getNumberOfVisitsPerPage","getNumberOfVisitsByDaysSinceLast","getNumberOfVisitsByVisitCount")
-  m[["VisitsSummary"]] <- c("get","getVisits","getUniqueVisitors","getUsers","getActions","getMaxActions","getBounceCount","getVisitsConverted","getSumVisitsLength","getSumVisitsLengthPretty")
-  l <- setNames(vector("list", length(m)), names(m))
-  #lapply(l, function(l) setNames(vector("list",length(m[[1]])),m[[1]]))
-  for (i in 1:length(m)) {
-    l[[i]] <- setNames(vector("list",length(m[[i]])),m[[i]])
-    for (j in 1:length(m[[i]])) {
-      ll = length(l[[i]][[j]])
-      #print(paste(i,j, names(m)[i], m[[i]][j]))
-      l[[i]][[j]][[ll+1]] <- getData(date, period, names(m)[i], m[[i]][j])
-    }
-  }
-  #l$UserCountry = list(getCountry=list(), getContinent=list(), getRegion=list(), getCity=list())
-  #l$UserCountry$getCountry[[length(l$UserCountry$getCountry)+1]] <- getData(date, period, "UserCountry","getCountry")
-  return(l)
 }
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
@@ -69,29 +47,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
 }
 
-#getData("2017-04-19","UserCountry","getCountry", hideColumns="nb_visits_converted", update=T)
-
-useData <- function(alldata, date, period, object, method) {
-  return(alldata[[object]][[method]][[1]][[2]])
-}
-
-samples <- function() {
-  ##language
-  #library(treemap)
-  df <- useData(eas,"today","year","UserLanguage","getLanguage")
-  treemap(cbind(df,bounce_ratio=df$bounce_count/df$nb_visits),c("label"), vSize="nb_visits", vColor="bounce_ratio", type="value")
-  
-  
-  ##country
-  #library(countrycode)
-  #dfContinent <- useData(eas,"today","year","UserCountry","getContinent")
-  dfCountry <- useData(eas,"today","year","UserCountry","getCountry")
-  #levels(dfContinent$metadata_code) <- replace(levels(dfContinent$metadata_code),levels(dfContinent$metadata_code)=="North America","Northern America")
-  #levels(dfContinent$metadata_code) <- replace(levels(dfContinent$metadata_code),levels(dfContinent$metadata_code)=="South America","Southern America")
-  levels(dfCountry$metadata_code) <- toupper(levels(dfCountry$metadata_code))
-  df <- merge(x=dfCountry, y=countrycode_data[c("continent","iso2c")], by.x="metadata_code", by.y="iso2c", all.x=T)
-  
-}
+#getData(Sys.Date()-1,"VisitorInterest","getNumberOfVisitsByVisitCount", updatemode=T, appendmode=T, filter_limit=-1)
 
 
-#eas = getAllData("today", "year")

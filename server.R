@@ -7,16 +7,13 @@ function(input, output, clientData, session) {
   variable_choice_def <- "(choose a variable)"
   filtervalue_choice_def <- "(choose a value)"
   
-  # method_options <- method_choice_def
-  # variable_options <- variable_choice_def
-  # filtervalue_options <- filtervalue_choice_def
-  
   get_df <- reactive({
     if (input$filtervalue==filtervalue_choice_def)
-      d[[input$object]][[input$method]]
+      res <- d[[input$object]][[input$method]]
     else
-      #d[[input$object]][[input$method]][c("input$variable")==input$filtervalue,]
-      d[[input$object]][[input$method]][d[[input$object]][[input$method]][[input$variable]]==input$filtervalue,]
+      res <- d[[input$object]][[input$method]][d[[input$object]][[input$method]][[input$variable]]==input$filtervalue,]
+    res <- subset(res, as.Date(date) %in% seq(from=as.Date(input$dateRange[1]), to=as.Date(input$dateRange[2]), by='days'))
+    return(res)
   })
   
   get_methods <- reactive({
@@ -57,15 +54,10 @@ function(input, output, clientData, session) {
   
   
   output$table <- DT::renderDataTable(DT::datatable({
-    
     if (input$object != object_choice_def & input$method != method_choice_def) {
-      # data <- d[[input$object]][[input$method]]
-      # if (input$variable != variable_choice_def & input$filtervalue != filtervalue_choice_def)
-      #   data <- data[data$input$variable==input$filtervalue,]
       data <- get_df()
       data
     }
-    
   }))
   
 }
