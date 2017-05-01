@@ -1,26 +1,38 @@
-#
-# This is the server logic of a Shiny web application. You can run the 
-# application by clicking 'Run App' above.
-#
-# Find out more about building applications with Shiny here:
-# 
-#    http://shiny.rstudio.com/
-#
 
-library(shiny)
 
-# Define server logic required to draw a histogram
-shinyServer(function(input, output) {
-   
-  output$distPlot <- renderPlot({
+function(input, output, clientData, session) {
+  
+  object_choice_def <- "(choose an object)"
+  method_choice_def <- "(choose a method)"
+  method_options <- method_choice_def
+  
+  observe({
     
-    # generate bins based on input$bins from ui.R
-    x    <- faithful[, 2] 
-    bins <- seq(min(x), max(x), length.out = input$bins + 1)
+    if (input$object==object_choice_def)
+      method_options <- method_choice_def
+    else
+      method_options <- c(method_choice_def,names(d[[input$object]]))
+
+    output$table <- DT::renderDataTable(DT::datatable({
+
+      if (input$object != object_choice_def & input$method != method_choice_def) {
+        print("hello")
+        print(input$object)
+        print(input$method)
+        data <- d[[input$object]][[input$method]]
+        print(data)
+        data
+      }
+      # if (input$cyl != "All") {
+      #   data <- data[data$cyl == input$cyl,]
+      # }
+      # if (input$trans != "All") {
+      #   data <- data[data$trans == input$trans,]
+      # }
+    }))
     
-    # draw the histogram with the specified number of bins
-    hist(x, breaks = bins, col = 'darkgray', border = 'white')
+    updateSelectInput(session,"method", choices=method_options)
     
   })
   
-})
+}

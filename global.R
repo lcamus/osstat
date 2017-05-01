@@ -4,7 +4,7 @@ loadPackages("rvest")
 loadPackages("visNetwork")
 
 
-#variables partagées :
+#variables partagÃ©es :
 
 fdata <- "data/d.RData"
 base <- "https://utils.euro-area-statistics.org/admin/piwik/?module=API"
@@ -12,7 +12,7 @@ idSite <- "1"
 format <- "CSV"
 token_auth <- as.character(read.table("private/token",header=F)[,])
 
-if (exists(fdata)) {
+if (file.exists(fdata)) {
   load(fdata)
 } else {
   d <<- list(UserCountry=list(getCountry=data.frame(), getContinent=data.frame(), getRegion=data.frame(), getCity=data.frame()),
@@ -38,6 +38,6 @@ visNetwork(nodes, edges, height="700px", width="100%") %>%
 
 # get data :
 source("src/data.R")
-save(d, file=fdata)
+#save(d, file=fdata)
 
 
