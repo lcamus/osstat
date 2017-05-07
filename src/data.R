@@ -30,7 +30,14 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                paste0("filter_limit=",filter_limit),
                paste0("hideColumns=",hideColumns),
                sep="&")
-    df <- cbind(date=date, read.csv(url(description=u, open="", blocking=TRUE, encoding="UTF-16",method="default"),header=T,sep=","))
+    l <- readLines(url(description=u,encoding="UTF-16"), warn=F)
+    #l <- strsplit(l[1],",")[[1]]
+    df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){strsplit(x,",")[[1]]}))))
+    rownames(df) <- 1:nrow(df)
+    df <- setNames(df[-1,],strsplit(l[1],",")[[1]])
+
+    #df <- cbind(date=date, read.csv(url(description=u, open="", blocking=TRUE, encoding="windows-1252",method="default"),header=T,sep=","))
+    df <- cbind(date=date, df)
     df <- df[,!colnames(df) %in% fieldstoremove]
   }
   else
@@ -47,6 +54,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
 }
 
-#getData(Sys.Date()-1,"VisitorInterest","getNumberOfVisitsByVisitCount", updatemode=T, appendmode=T, filter_limit=-1)
+getData(Sys.Date()-1,"Actions","getExitPageTitles", updatemode=T, appendmode=T, filter_limit=-1)
 
 

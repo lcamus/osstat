@@ -30,7 +30,7 @@ if (!exists("d") & file.exists(fdata)) {
                           getExitPageTitles=data.frame(), getDownloads=data.frame())
   )
   #Actions.getPageUrl, Actions.getPageTitle, Actions.getDownload, Actions.getOutlink : à étudier
-  #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : pb sur chaîne en cyrillique
+  #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : pb encodage
 }
 
 #hideCol <- list(UserCountry=list(getCountry=c("nb_visits_converted"), getContinent=c("nb_visits_converted"), getRegion=c("nb_visits_converted")))
