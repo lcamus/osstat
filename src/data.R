@@ -1,3 +1,9 @@
+getRowCol <- function(object,method) {
+  codeObject <- as.character(sapply(strsplit(object,""),function(x){x %in% LETTERS})) 
+  codeObject <- strsplit(object,"")[[1]][as.logical(codeObject)]
+  codeObject <- paste0(codeObject,collapse="")
+  return(codeObject)
+}
 
 collectData <- function(from, to) {
   
@@ -6,7 +12,8 @@ collectData <- function(from, to) {
   for (object in names(d))
     for (method in names(d[[object]]))
       for (day in seq_along(days))
-        getData(day, object, method, update=F)
+        getData(day, object, method, updatemode=T, appendmode=T)
+  
 }
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
@@ -54,6 +61,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
 }
 
-getData(Sys.Date()-1,"Actions","getExitPageTitles", updatemode=T, appendmode=T, filter_limit=-1)
+#getData(Sys.Date()-1,"Actions","getExitPageTitles", updatemode=T, appendmode=T, filter_limit=-1)
 
 
