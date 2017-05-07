@@ -1,8 +1,26 @@
-getRowCol <- function(object,method) {
-  codeObject <- as.character(sapply(strsplit(object,""),function(x){x %in% LETTERS})) 
-  codeObject <- strsplit(object,"")[[1]][as.logical(codeObject)]
-  codeObject <- paste0(codeObject,collapse="")
-  return(codeObject)
+getGID <- function(module,method) {
+  
+  getCap <- function(s) {
+    res <- as.character(sapply(strsplit(s,""),function(x){x %in% LETTERS})) 
+    res <- strsplit(s,"")[[1]][as.logical(res)]
+    res <- paste0(res,collapse="")
+    return(res)
+  }
+  
+  getCode <- function(m) {
+    caps <- which(strsplit(m,"")[[1]] %in% LETTERS)
+    s <- substring(m,caps[1])
+    s <- strsplit(s,"(?=[A-Z])",perl=T)
+    s <- sapply(s,function(x) substring(x,1,1))
+    s <- paste0(as.character(s),collapse="")
+  }
+  
+  if (is.null(codeData[[module]]))
+    codeData[[module]] <- getCap(module)
+  
+  if (is.null(codeData[[paste(module,method,sep=":")]]))
+    codeData[[paste(module,method,sep=":")]] <- getCode(method)
+  
 }
 
 collectData <- function(from, to) {
@@ -38,12 +56,9 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                paste0("hideColumns=",hideColumns),
                sep="&")
     l <- readLines(url(description=u,encoding="UTF-16"), warn=F)
-    #l <- strsplit(l[1],",")[[1]]
     df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){strsplit(x,",")[[1]]}))))
-    rownames(df) <- 1:nrow(df)
     df <- setNames(df[-1,],strsplit(l[1],",")[[1]])
-
-    #df <- cbind(date=date, read.csv(url(description=u, open="", blocking=TRUE, encoding="windows-1252",method="default"),header=T,sep=","))
+    rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
     df <- cbind(date=date, df)
     df <- df[,!colnames(df) %in% fieldstoremove]
   }
@@ -56,7 +71,9 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     else
       print(df)
   } else {
-    d[[object]][[method]][d[[object]][[method]]$date==date,] <- df
+    #d[[object]][[method]][d[[object]][[method]]$date==date,] <<- df
+    d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]
+    d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
   }
   
 }

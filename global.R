@@ -7,6 +7,7 @@ loadPackages("visNetwork")
 #variables partagées :
 
 fdata <- "data/d.RData"
+fcodeData <- "data/codeData.RData"
 base <- "https://utils.euro-area-statistics.org/admin/piwik/?module=API"
 idSite <- "1"
 format <- "CSV"
@@ -36,6 +37,12 @@ if (!exists("d") & file.exists(fdata)) {
 #hideCol <- list(UserCountry=list(getCountry=c("nb_visits_converted"), getContinent=c("nb_visits_converted"), getRegion=c("nb_visits_converted")))
 hideCol <- list()
 fieldstoremove <- c("metadata_logo","metadata_logoWidth","metadata_logoHeight", "nb_visits_converted")  
+
+if (!exists("codeData") & file.exists(fcodeData)) {
+  load(fcodeData)
+} else {
+  codeData <- list()
+}
 
 url_root <- "https://www.euro-area-statistics.org"
 nodes <- data.frame()
