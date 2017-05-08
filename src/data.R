@@ -29,12 +29,18 @@ collectData <- function(from, to) {
   
   for (object in names(d))
     for (method in names(d[[object]]))
-      for (day in seq_along(days))
-        getData(day, object, method, updatemode=T, appendmode=T)
+      #for (day in seq_along(days))
+      for (day in days)
+        getData(as.Date(day,origin="1970-01-01"), object, method, updatemode=T, appendmode=T)
+  
+  save(d, file=fdata)
   
 }
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
+  
+  print(object)
+  print(method)
   
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(period)) period <- "day"
@@ -42,7 +48,10 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   if (missing(appendmode)) appendmode <- FALSE
   if (missing(hideColumns)) hideColumns <- paste(hideCol[[object]][[method]],collapse=",")
 
-  updatable <- nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0
+  if (is.null(d[[object]][[method]]))
+    updatable <- FALSE
+  else
+    updatable <- nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0
   
   if (!updatable |(updatable & updatemode)) {
     u <- paste(base,
@@ -55,6 +64,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                paste0("filter_limit=",filter_limit),
                paste0("hideColumns=",hideColumns),
                sep="&")
+    print(paste("exec API for",object,method,sep=" "))
     l <- readLines(url(description=u,encoding="UTF-16"), warn=F)
     df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){strsplit(x,",")[[1]]}))))
     df <- setNames(df[-1,],strsplit(l[1],",")[[1]])
@@ -78,6 +88,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
 }
 
-#getData(Sys.Date()-1,"Actions","getExitPageTitles", updatemode=T, appendmode=T, filter_limit=-1)
+#getData(Sys.Date()-1,"UserCountry","getCountry", updatemode=T, appendmode=T, filter_limit=-1)
 
 
