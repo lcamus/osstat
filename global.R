@@ -29,7 +29,8 @@ if (!exists("d") & file.exists(fdata)) {
              Actions=list(get=data.frame(), getPageUrls=data.frame(),
                           getEntryPageUrls=data.frame(), getExitPageUrls=data.frame(),
                           getPageTitles=data.frame(), getEntryPageTitles=data.frame(),
-                          getExitPageTitles=data.frame(), getDownloads=data.frame())
+                          getExitPageTitles=data.frame(), getDownloads=data.frame()),
+             Live=list(getLastVisitsDetails=data.frame())
   )
   #Actions.getPageUrl, Actions.getPageTitle, Actions.getDownload, Actions.getOutlink : à étudier
   #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : pb encodage

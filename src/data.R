@@ -1,3 +1,32 @@
+exploreVisits <- function(visitorId) {
+  #febbfc27e32025ad
+  df <- d[["Live"]][["getLastVisitsDetails"]]
+  df <- df[df$visitorId==visitorId,]
+  sapply(names(df),function(x){if (df$x !="") print(df$x)})
+}
+
+
+setNumeric <- function() {
+  
+  pattern <- c("nb_","max_","sum_","_count","avg_","min_")
+  
+  for (module in names(d))
+    for (method in names(d[[module]]))
+      for (col in colnames(d[[module]][[method]]))
+        if (grepl("_rate",col) | grepl("_country",col) | grepl("_percentage",col))
+          break
+        else {
+          for (p in pattern)
+            if (grepl(p,col)) {
+              print(paste(module,method,col,p,sep=":"))
+              d[[module]][[method]][,c(col)] <<- as.numeric(as.character(d[[module]][[method]][,c(col)]))
+              #d[[module]][[method]][,c("date")]
+              break
+            }          
+        }
+
+}
+
 getGID <- function(module,method) {
   
   getCap <- function(s) {
@@ -29,7 +58,6 @@ collectData <- function(from, to) {
   
   for (object in names(d))
     for (method in names(d[[object]]))
-      #for (day in seq_along(days))
       for (day in days)
         getData(as.Date(day,origin="1970-01-01"), object, method, updatemode=T, appendmode=T)
   
@@ -67,9 +95,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     print(paste("exec API for",object,method,sep=" "))
     l <- readLines(url(description=u,encoding="UTF-16"), warn=F)
     pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
-    #df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){strsplit(x,pattern,perl=T)[[1]]}))))
     df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){stri_split(str=x,regex=pattern)[[1]]}))))
-    #df <- setNames(df[-1,],strsplit(l[1],",")[[1]])
     df <- setNames(df,strsplit(l[1],",")[[1]])
     rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
     df <- cbind(date=date, df)
@@ -84,13 +110,12 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     else
       print(df)
   } else {
-    #d[[object]][[method]][d[[object]][[method]]$date==date,] <<- df
     d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]
     d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
   }
   
 }
 
-#getData(Sys.Date()-1,"UserCountry","getCountry", updatemode=T, appendmode=T, filter_limit=-1)
+#getData(Sys.Date()-1,"Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
 
 
