@@ -66,7 +66,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                sep="&")
     print(paste("exec API for",object,method,sep=" "))
     l <- readLines(url(description=u,encoding="UTF-16"), warn=F)
-    df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){strsplit(x,",")[[1]]}))))
+    pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
+    df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){strsplit(x,pattern,perl=T)[[1]]}))))
     df <- setNames(df[-1,],strsplit(l[1],",")[[1]])
     rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
     df <- cbind(date=date, df)
