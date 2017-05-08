@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 exploreVisits <- function(visitorId) {
   #febbfc27e32025ad
   df <- d[["Live"]][["getLastVisitsDetails"]]
@@ -5,6 +6,8 @@ exploreVisits <- function(visitorId) {
   sapply(names(df),function(x){if (df$x !="") print(df$x)})
 }
 
+=======
+>>>>>>> origin/master
 
 setNumeric <- function() {
   
