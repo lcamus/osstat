@@ -1,5 +1,6 @@
 source("src/util.R")
 
+loadPackages("stringi")
 loadPackages("rvest")
 loadPackages("visNetwork")
 
