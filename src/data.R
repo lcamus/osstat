@@ -1,13 +1,10 @@
-<<<<<<< HEAD
+
 exploreVisits <- function(visitorId) {
   #febbfc27e32025ad
   df <- d[["Live"]][["getLastVisitsDetails"]]
   df <- df[df$visitorId==visitorId,]
   sapply(names(df),function(x){if (df$x !="") print(df$x)})
 }
-
-=======
->>>>>>> origin/master
 
 setNumeric <- function() {
   
@@ -70,6 +67,37 @@ collectData <- function(from, to) {
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
   
+  getData_Live_getLastVisitsDetails <- function() {
+      
+      c_actions <- grep(pattern="_\\d+_",x=colnames(df))
+      c_visits <- sort(colnames(df[,-c_actions]))
+      c_actions <- sort(colnames(df[,c_actions]))
+      
+      c_visits_top <- sort(c("date","serverTimePretty","idVisit","visitorId","visitIp","country","visitorType","visitCount",
+                        "visitDurationPretty","actions","referrerType","referrerName"), decreasing=T)
+      l_visits <- as.list(c_visits)
+      for (i in c_visits_top)
+        l_visits[[grep(pattern=paste0("^",i,"$"),x=c_visits)]] <- NULL
+      
+      c_visits <- c(c_visits_top, sort(as.character(l_visits)))
+      
+      #df <- df[,c(c_visits, c_actions)]
+      module <- "Live"
+      methods <- c("getLastVisitsDetails:Visits","getLastVisitsDetails:Actions")
+      for (method in methods) {
+        if (is.null(d[[module]][[method]]))
+          d[[module]][[method]] <<- data.frame()
+        if (updatemode | appendmode) {
+          d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
+          if (method=="getLastVisitsDetails:Visits")
+            d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c_visits])
+          else # :Actions
+            d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c_actions])
+        } 
+      }
+    
+  }
+  
   print(object)
   print(method)
   
@@ -85,6 +113,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     updatable <- nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0
   
   if (!updatable |(updatable & updatemode)) {
+    
     u <- paste(base,
                paste("method=", object, ".", method, sep=""),
                paste0("idSite=",idSite),
@@ -95,30 +124,39 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                paste0("filter_limit=",filter_limit),
                paste0("hideColumns=",hideColumns),
                sep="&")
+    
+    # get the data from the API :
     print(paste("exec API for",object,method,sep=" "))
     l <- readLines(url(description=u,encoding="UTF-16"), warn=F)
+    
     pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
     df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){stri_split(str=x,regex=pattern)[[1]]}))))
     df <- setNames(df,strsplit(l[1],",")[[1]])
     rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
     df <- cbind(date=date, df)
     df <- df[,!colnames(df) %in% fieldstoremove]
+    
   }
   else
     return
   
-  if (!updatable) {
-    if (appendmode)
+  if (object=="Live" & method=="getLastVisitsDetails")
+    getData_Live_getLastVisitsDetails()
+  else {
+    if (!updatable) {
+      if (appendmode)
+        d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
+      else
+        #print(df)
+        print("no action")
+    } else {
+      d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]
       d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
-    else
-      print(df)
-  } else {
-    d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]
-    d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
+    }    
   }
   
 }
 
-#getData(Sys.Date()-1,"Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
+#getData("2017-05-01","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
 
 
