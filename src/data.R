@@ -81,19 +81,29 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       
       c_visits <- c(c_visits_top, sort(as.character(l_visits)))
       
-      #df <- df[,c(c_visits, c_actions)]
       module <- "Live"
-      methods <- c("getLastVisitsDetails:Visits","getLastVisitsDetails:Actions")
-      for (method in methods) {
-        if (is.null(d[[module]][[method]]))
-          d[[module]][[method]] <<- data.frame()
-        if (updatemode | appendmode) {
-          d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
-          if (method=="getLastVisitsDetails:Visits")
-            d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c_visits])
-          else # :Actions
-            d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c_actions])
-        } 
+      
+      method <- "getLastVisitsDetails:Visits"
+      if (is.null(d[[module]][[method]]))
+        d[[module]][[method]] <<- data.frame(
+          matrix(vector(),0,length(c_visits),dimnames=list(c(),c_visits)),
+          stringsAsFactors=F)
+      
+      if (updatemode | appendmode) {
+        d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
+        d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c_visits])
+      }
+      
+      method <- "getLastVisitsDetails:Actions"
+      if (is.null(d[[module]][[method]]))
+        d[[module]][[method]] <<- data.frame(
+          matrix(vector(),0,3,dimnames=list(c(),c("idVisit","field_name","field_value"))),
+          stringsAsFactors=F)
+      
+      if (updatemode | appendmode) {
+        d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
+        df_a <- t(df[,c("idVisit",c_actions)])
+        d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c("idVisit","field_name","field_value")])
       }
     
   }
