@@ -69,9 +69,13 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
   getData_Live_getLastVisitsDetails <- function() {
       
-      c_actions <- grep(pattern="_\\d+_",x=colnames(df))
+      c_actions <- grep(pattern="actionDetails_\\d+_",x=colnames(df))
       c_visits <- sort(colnames(df[,-c_actions]))
-      c_actions <- sort(colnames(df[,c_actions]))
+
+      t <-as.numeric(gsub("[a-z,A-Z,_]+","",colnames(df[,c_actions])))
+      names(t) <- 1:length(t)
+      t <- sort(t)
+      c_actions <- colnames(df[,c_actions])[as.numeric(names(t))]
       
       c_visits_top <- sort(c("date","serverTimePretty","idVisit","visitorId","visitIp","country","visitorType","visitCount",
                         "visitDurationPretty","actions","referrerType","referrerName"), decreasing=T)
@@ -95,15 +99,27 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       }
       
       method <- "getLastVisitsDetails:Actions"
+      h_visits <- c("idVisit","step","field","value")
       if (is.null(d[[module]][[method]]))
         d[[module]][[method]] <<- data.frame(
-          matrix(vector(),0,3,dimnames=list(c(),c("idVisit","field_name","field_value"))),
+          matrix(vector(),0,4,dimnames=list(c(),h_visits)),
           stringsAsFactors=F)
       
       if (updatemode | appendmode) {
         d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
-        df_a <- t(df[,c("idVisit",c_actions)])
-        d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c("idVisit","field_name","field_value")])
+        df_a <- as.data.frame(as.vector(t(df[,c_actions])))
+        #field :
+        df_a <- cbind(rep(c_actions,nrow(df)),df_a)
+        #step :
+        steps <- sapply(c_actions,function(x){gsub("[a-z,A-Z,_]+","",x)})
+        df_a <- cbind(rep(steps,nrow(df)),df_a)
+        #idVisit :
+        #df_a <- cbind(sort(rep(df$idVisit,length(c_actions)),decreasing=T),df_a)
+        df_a <- cbind(as.numeric(sapply(df$idVisit,function(x) rep(x,length(c_actions)))),df_a)
+        
+        df_a <- setNames(df_a,h_visits)
+        
+        d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c("idVisit","step","field","value")])
       }
     
   }
