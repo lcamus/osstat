@@ -87,6 +87,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       
       module <- "Live"
       
+      #append visits general info :
+      
       method <- "getLastVisitsDetails:Visits"
       if (is.null(d[[module]][[method]]))
         d[[module]][[method]] <<- data.frame(
@@ -98,6 +100,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c_visits])
       }
       
+      #append visits actions :
+      
       method <- "getLastVisitsDetails:Actions"
       h_visits <- c("idVisit","step","field","value")
       if (is.null(d[[module]][[method]]))
@@ -106,20 +110,24 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
           stringsAsFactors=F)
       
       if (updatemode | appendmode) {
+        
         d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
         df_a <- as.data.frame(as.vector(t(df[,c_actions])))
         #field :
-        df_a <- cbind(rep(c_actions,nrow(df)),df_a)
+        df_a <- cbind(rep(gsub("^[a-zA-Z]+_\\d+_","",c_actions),nrow(df)),df_a)
         #step :
         steps <- sapply(c_actions,function(x){gsub("[a-z,A-Z,_]+","",x)})
         df_a <- cbind(rep(steps,nrow(df)),df_a)
         #idVisit :
-        #df_a <- cbind(sort(rep(df$idVisit,length(c_actions)),decreasing=T),df_a)
         df_a <- cbind(as.numeric(sapply(df$idVisit,function(x) rep(x,length(c_actions)))),df_a)
         
+        #delete empty actions :
         df_a <- setNames(df_a,h_visits)
+        df_a <- df_a[sapply(as.numeric(rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])),function(x) seq(x,x+10)),]
         
-        d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c("idVisit","step","field","value")])
+        #append data in final structure :
+        d[[object]][[method]] <<- rbind(d[[object]][[method]],df_a)
+        
       }
     
   }
