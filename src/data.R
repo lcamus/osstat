@@ -1,10 +1,10 @@
 
-exploreVisits <- function(visitorId) {
-  #febbfc27e32025ad
-  df <- d[["Live"]][["getLastVisitsDetails"]]
-  df <- df[df$visitorId==visitorId,]
-  sapply(names(df),function(x){if (df$x !="") print(df$x)})
-}
+# exploreVisits <- function(visitorId) {
+#   #febbfc27e32025ad
+#   df <- d[["Live"]][["getLastVisitsDetails"]]
+#   df <- df[df$visitorId==visitorId,]
+#   sapply(names(df),function(x){if (df$x !="") print(df$x)})
+# }
 
 setNumeric <- function() {
   
@@ -20,7 +20,6 @@ setNumeric <- function() {
             if (grepl(p,col)) {
               print(paste(module,method,col,p,sep=":"))
               d[[module]][[method]][,c(col)] <<- as.numeric(as.character(d[[module]][[method]][,c(col)]))
-              #d[[module]][[method]][,c("date")]
               break
             }          
         }
@@ -97,7 +96,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       
       if (updatemode | appendmode) {
         d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
-        d[[object]][[method]] <<- rbind(d[[object]][[method]],df[,c_visits])
+        d[[module]][[method]] <<- rbind(d[[module]][[method]],df[,c_visits])
       }
       
       #append visits actions :
@@ -111,7 +110,9 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       
       if (updatemode | appendmode) {
         
-        d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
+        # erase any visits to be updated
+        d[[module]][[method]] <<- d[[module]][[method]][!d[[module]][[method]]$idVisit %in% df$idVisit,]
+        
         df_a <- as.data.frame(as.vector(t(df[,c_actions])))
         #field :
         df_a <- cbind(rep(gsub("^[a-zA-Z]+_\\d+_","",c_actions),nrow(df)),df_a)
@@ -126,7 +127,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         df_a <- df_a[sapply(as.numeric(rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])),function(x) seq(x,x+10)),]
         
         #append data in final structure :
-        d[[object]][[method]] <<- rbind(d[[object]][[method]],df_a)
+        d[[module]][[method]] <<- rbind(d[[module]][[method]],df_a)
         
       }
     
@@ -168,7 +169,9 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     df <- setNames(df,strsplit(l[1],",")[[1]])
     rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
     df <- cbind(date=date, df)
-    df <- df[,!colnames(df) %in% fieldstoremove]
+    #df <- df[,!colnames(df) %in% fieldstoremove]
+    # remove unuseful fields :
+    df <- df[,-unlist(sapply(fieldstoremove,function(x){which(grepl(x,colnames(df))==TRUE)}))]
     
   }
   else
@@ -181,7 +184,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       if (appendmode)
         d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
       else
-        #print(df)
         print("no action")
     } else {
       d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]

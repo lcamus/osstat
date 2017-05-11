@@ -32,13 +32,13 @@ if (!exists("d") & file.exists(fdata)) {
                           getExitPageTitles=data.frame(), getDownloads=data.frame()),
              Live=list(getLastVisitsDetails=data.frame())
   )
-  #Actions.getPageUrl, Actions.getPageTitle, Actions.getDownload, Actions.getOutlink : à étudier
-  #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : pb encodage
+  #Actions.getPageUrl, Actions.getPageTitle, Actions.getDownload, Actions.getOutlink : to study
+  #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : issue related to enconding (fix result to check)
 }
 
 #hideCol <- list(UserCountry=list(getCountry=c("nb_visits_converted"), getContinent=c("nb_visits_converted"), getRegion=c("nb_visits_converted")))
 hideCol <- list()
-fieldstoremove <- c("metadata_logo","metadata_logoWidth","metadata_logoHeight", "nb_visits_converted")  
+fieldstoremove <- c("metadata_logo","metadata_logoWidth","metadata_logoHeight", "nb_visits_converted","pluginsIcons")  
 
 if (!exists("codeData") & file.exists(fcodeData)) {
   load(fcodeData)
