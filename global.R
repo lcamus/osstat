@@ -5,7 +5,7 @@ loadPackages("rvest")
 loadPackages("visNetwork")
 
 
-#variables partagées :
+#shared variables :
 
 fdata <- "data/d.RData"
 fcodeData <- "data/codeData.RData"
@@ -61,5 +61,6 @@ edges <- data.frame()
 # get data :
 source("src/data.R")
 #save(d, file=fdata)
+#save(df, file="data/df.RData")
 
 

@@ -66,6 +66,8 @@ collectData <- function(from, to) {
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
   
+  require(stringi)
+  
   getData_Live_getLastVisitsDetails <- function() {
       
       c_actions <- grep(pattern="actionDetails_\\d+_",x=colnames(df))
@@ -122,11 +124,11 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         #idVisit :
         df_a <- cbind(as.numeric(sapply(df$idVisit,function(x) rep(x,length(c_actions)))),df_a)
         
-        #delete empty actions :
+        #delete empty actions
         df_a <- setNames(df_a,h_visits)
         df_a <- df_a[sapply(as.numeric(rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])),function(x) seq(x,x+10)),]
         
-        #append data in final structure :
+        #append data in final structure
         d[[module]][[method]] <<- rbind(d[[module]][[method]],df_a)
         
       }
