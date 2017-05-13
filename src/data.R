@@ -55,12 +55,15 @@ collectData <- function(from, to, filter_limit) {
   
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
-  for (module in names(d))
-    for (method in names(d[[module]])) {
-      method <- strsplit(method,":")[[1]][1]
+  for (module in names(d)) {
+    #methods <- names(d[[module]])
+    methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)}))
+    for (method in methods)
+      #for (method in names(d[[module]])) {
+      #method <- strsplit(method,":")[[1]][1]
       for (day in days)
         getData(as.Date(day,origin="1970-01-01", filter_limit=filter_limit), module, method, updatemode=T, appendmode=T) 
-    }
+  }
   
   save(d, file=fdata)
   
@@ -69,6 +72,7 @@ collectData <- function(from, to, filter_limit) {
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
   
   require(stringi)
+  options(stringsAsFactors=F)
   
   getData_Live_getLastVisitsDetails <- function(df) {
       
@@ -99,7 +103,10 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
           stringsAsFactors=F)
       
       if (updatemode | appendmode) {
-        d[[module]][[methodSub]] <<- d[[module]][[methodSub]][d[[module]][[methodSub]]$date!=date,]
+        #d[[module]][[methodSub]] <<- d[[module]][[methodSub]][as.Date(d[[module]][[methodSub]]$date)!=date,]
+        d[[module]][[methodSub]] <<- d[[module]][[methodSub]][d[[module]][[methodSub]]$date!=date |
+                                                                (d[[module]][[methodSub]]$date==date & 
+                                                                   !d[[module]][[methodSub]]$visitServerHour %in% unique(df$visitServerHour))]
         d[[module]][[methodSub]] <<- rbind(d[[module]][[methodSub]],df[,c_visits])
       }
       
