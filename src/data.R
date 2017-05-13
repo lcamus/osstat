@@ -135,6 +135,57 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     
   }
   
+  getData_APICall <- function() {
+    
+    u <- paste(base,
+               paste("method=", object, ".", method, sep=""),
+               paste0("idSite=",idSite),
+               paste("date=", date, sep=""),
+               paste0("period=",period),
+               paste0("format=",format),
+               paste0("token_auth=",token_auth),
+               paste0("filter_limit=",filter_limit),
+               paste0("hideColumns=",hideColumns),
+               sep="&")
+    
+    print(paste("exec API for",object,method,sep=" "))
+    
+    if (object=="Live" & method=="getLastVisitsDetails") {
+      # read data in several calls for individual visits (heavy)
+      breaks <- c("visitServerHour%3C7","visitServerHour%3E=7;visitServerHour%3C10","visitServerHour%3E=10;visitServerHour%3C20","visitServerHour%3E=20")
+      l <- lapply(breaks,function(x) {
+        ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
+        #print(ou)
+        res <- readLines(ou, warn=T)
+        #print(res)
+        close(ou)
+        return(res)
+        })
+      l <- as.vector(l)
+    }
+    else {
+      # nominal case (not heavy)
+      ou <- url(description=u,encoding="UTF-16")
+      l <- readLines(ou, warn=F)
+      close(ou)
+    }
+      
+    #separate fields
+    pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
+    df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){stri_split(str=x,regex=pattern)[[1]]}))))
+    df <- setNames(df,strsplit(l[1],",")[[1]])
+    rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
+    df <- cbind(date=date, df)
+    
+    # remove unuseful fields
+    bye <- -unlist(sapply(fieldstoremove,function(x){which(grepl(x,colnames(df))==TRUE)}))
+    if (length(bye)>0) df <- df[,bye]
+
+    return(df)
+    
+  }
+    
+  
   print(object)
   print(method)
   
@@ -150,30 +201,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     updatable <- nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0
   
   if (!updatable |(updatable & updatemode)) {
-    
-    u <- paste(base,
-               paste("method=", object, ".", method, sep=""),
-               paste0("idSite=",idSite),
-               paste("date=", date, sep=""),
-               paste0("period=",period),
-               paste0("format=",format),
-               paste0("token_auth=",token_auth),
-               paste0("filter_limit=",filter_limit),
-               paste0("hideColumns=",hideColumns),
-               sep="&")
-    
-    # get the data from the API :
-    print(paste("exec API for",object,method,sep=" "))
-    l <- readLines(url(description=u,encoding="UTF-16"), warn=F)
-    
-    pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
-    df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){stri_split(str=x,regex=pattern)[[1]]}))))
-    df <- setNames(df,strsplit(l[1],",")[[1]])
-    rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
-    df <- cbind(date=date, df)
-    #df <- df[,!colnames(df) %in% fieldstoremove]
-    # remove unuseful fields :
-    df <- df[,-unlist(sapply(fieldstoremove,function(x){which(grepl(x,colnames(df))==TRUE)}))]
+    # get the data from the API
+    df <- getData_APICall()
     
   }
   else
