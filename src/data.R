@@ -51,14 +51,16 @@ getGID <- function(module,method) {
   
 }
 
-collectData <- function(from, to) {
+collectData <- function(from, to, filter_limit) {
   
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
-  for (object in names(d))
-    for (method in names(d[[object]]))
+  for (module in names(d))
+    for (method in names(d[[module]])) {
+      method <- strsplit(method,":")[[1]][1]
       for (day in days)
-        getData(as.Date(day,origin="1970-01-01"), object, method, updatemode=T, appendmode=T)
+        getData(as.Date(day,origin="1970-01-01", filter_limit=filter_limit), module, method, updatemode=T, appendmode=T) 
+    }
   
   save(d, file=fdata)
   
@@ -90,30 +92,30 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       
       #append visits general info :
       
-      method <- "getLastVisitsDetails:Visits"
-      if (is.null(d[[module]][[method]]))
-        d[[module]][[method]] <<- data.frame(
+      methodSub <- "getLastVisitsDetails:Visits"
+      if (is.null(d[[module]][[methodSub]]))
+        d[[module]][[methodSub]] <<- data.frame(
           matrix(vector(),0,length(c_visits),dimnames=list(c(),c_visits)),
           stringsAsFactors=F)
       
       if (updatemode | appendmode) {
-        d[[module]][[method]] <<- d[[module]][[method]][d[[module]][[method]]$date!=date,]
-        d[[module]][[method]] <<- rbind(d[[module]][[method]],df[,c_visits])
+        d[[module]][[methodSub]] <<- d[[module]][[methodSub]][d[[module]][[methodSub]]$date!=date,]
+        d[[module]][[methodSub]] <<- rbind(d[[module]][[methodSub]],df[,c_visits])
       }
       
       #append visits actions :
       
-      method <- "getLastVisitsDetails:Actions"
+      methodSub <- "getLastVisitsDetails:Actions"
       h_visits <- c("idVisit","step","field","value")
-      if (is.null(d[[module]][[method]]))
-        d[[module]][[method]] <<- data.frame(
+      if (is.null(d[[module]][[methodSub]]))
+        d[[module]][[methodSub]] <<- data.frame(
           matrix(vector(),0,4,dimnames=list(c(),h_visits)),
           stringsAsFactors=F)
       
       if (updatemode | appendmode) {
         
         # erase any visits to be updated
-        d[[module]][[method]] <<- d[[module]][[method]][!d[[module]][[method]]$idVisit %in% df$idVisit,]
+        d[[module]][[methodSub]] <<- d[[module]][[methodSub]][!d[[module]][[methodSub]]$idVisit %in% df$idVisit,]
         
         df_a <- as.data.frame(as.vector(t(df[,c_actions])))
         #field :
@@ -129,7 +131,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         df_a <- df_a[sapply(as.numeric(rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])),function(x) seq(x,x+10)),]
         
         #append data in final structure
-        d[[module]][[method]] <<- rbind(d[[module]][[method]],df_a)
+        d[[module]][[methodSub]] <<- rbind(d[[module]][[methodSub]],df_a)
         
       }
     
@@ -174,7 +176,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         close(ou)
         return(res)
         })
-      #l <- unlist(l)
       df <- sapply(l,function(x) separateFields(x))
       df <- sapply(df,function(x) removeNullFields(x))
     }
