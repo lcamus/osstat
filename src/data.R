@@ -53,14 +53,12 @@ getGID <- function(module,method) {
 
 collectData <- function(from, to, filter_limit) {
   
+  if (missing(filter_limit)) filter_limit <- "-1"
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
   for (module in names(d)) {
-    #methods <- names(d[[module]])
     methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)}))
     for (method in methods)
-      #for (method in names(d[[module]])) {
-      #method <- strsplit(method,":")[[1]][1]
       for (day in days)
         getData(as.Date(day,origin="1970-01-01", filter_limit=filter_limit), module, method, updatemode=T, appendmode=T) 
   }
@@ -106,7 +104,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         #d[[module]][[methodSub]] <<- d[[module]][[methodSub]][as.Date(d[[module]][[methodSub]]$date)!=date,]
         d[[module]][[methodSub]] <<- d[[module]][[methodSub]][d[[module]][[methodSub]]$date!=date |
                                                                 (d[[module]][[methodSub]]$date==date & 
-                                                                   !d[[module]][[methodSub]]$visitServerHour %in% unique(df$visitServerHour))]
+                                                                   !d[[module]][[methodSub]]$visitServerHour %in% unique(df$visitServerHour)),]
         d[[module]][[methodSub]] <<- rbind(d[[module]][[methodSub]],df[,c_visits])
       }
       
