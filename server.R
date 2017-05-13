@@ -13,7 +13,7 @@ function(input, output, clientData, session) {
     else
       res <- d[[input$object]][[input$method]][d[[input$object]][[input$method]][[input$variable]]==input$filtervalue,]
     res <- subset(res, as.Date(date) %in% seq(from=as.Date(input$dateRange[1]), to=as.Date(input$dateRange[2]), by='days'))
-    res <- res[order(-res$date),]
+    #res <- res[order(-res$date),]
     return(res)
   })
   

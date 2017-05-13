@@ -68,7 +68,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
   require(stringi)
   
-  getData_Live_getLastVisitsDetails <- function() {
+  getData_Live_getLastVisitsDetails <- function(df) {
       
       c_actions <- grep(pattern="actionDetails_\\d+_",x=colnames(df))
       c_visits <- sort(colnames(df[,-c_actions]))
@@ -137,6 +137,21 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
   getData_APICall <- function() {
     
+    separateFields <- function(l) {
+      pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
+      df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){stri_split(str=x,regex=pattern)[[1]]}))))
+      df <- setNames(df,strsplit(l[1],",")[[1]])
+      rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
+      df <- cbind(date=date, df)
+      return(df)
+    }
+    
+    removeNullFields <- function(df) {
+      bye <- -unlist(sapply(fieldstoremove,function(x){which(grepl(x,colnames(df))==TRUE)}))
+      if (length(bye)>0) df <- df[,bye]
+      return(df)
+    }
+    
     u <- paste(base,
                paste("method=", object, ".", method, sep=""),
                paste0("idSite=",idSite),
@@ -155,31 +170,23 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       breaks <- c("visitServerHour%3C7","visitServerHour%3E=7;visitServerHour%3C10","visitServerHour%3E=10;visitServerHour%3C20","visitServerHour%3E=20")
       l <- lapply(breaks,function(x) {
         ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
-        res <- readLines(ou, warn=T)
+        res <- readLines(ou, warn=F)
         close(ou)
-        #return(res)
+        return(res)
         })
-      #l <- as.vector(l)
-      l <- unlist(l)
+      #l <- unlist(l)
+      df <- sapply(l,function(x) separateFields(x))
+      df <- sapply(df,function(x) removeNullFields(x))
     }
     else {
       # nominal case (not heavy)
       ou <- url(description=u,encoding="UTF-16")
       l <- readLines(ou, warn=F)
       close(ou)
+      df <- separateFields(l) # separate fields
+      df <- removeNullFields(df) # remove unuseful fields
     }
       
-    #separate fields
-    pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
-    df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){stri_split(str=x,regex=pattern)[[1]]}))))
-    df <- setNames(df,strsplit(l[1],",")[[1]])
-    rownames(df) <- paste(as.numeric(as.Date(date)),sprintf(paste0("%0",nchar(nrow(df)),"d"),1:nrow(df)),sep=":")
-    df <- cbind(date=date, df)
-    
-    # remove unuseful fields
-    bye <- -unlist(sapply(fieldstoremove,function(x){which(grepl(x,colnames(df))==TRUE)}))
-    if (length(bye)>0) df <- df[,bye]
-
     return(df)
     
   }
@@ -201,23 +208,23 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
   if (!updatable |(updatable & updatemode)) {
     # get the data from the API
-    df <- getData_APICall()
+    data <- getData_APICall()
     
   }
   else
     return
   
   if (object=="Live" & method=="getLastVisitsDetails")
-    getData_Live_getLastVisitsDetails()
+    lapply(data,function(x){getData_Live_getLastVisitsDetails(x)})
   else {
     if (!updatable) {
       if (appendmode)
-        d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
+        d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
       else
         print("no action")
     } else {
       d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]
-      d[[object]][[method]] <<- rbind(d[[object]][[method]],df)
+      d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
     }    
   }
   
