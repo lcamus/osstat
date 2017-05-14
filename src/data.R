@@ -195,7 +195,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     else {
       # nominal case (not heavy)
       ou <- url(description=u,encoding="UTF-16")
-      l <- readLines(ou, warn=T)
+      l <- readLines(ou, warn=F)
       close(ou)
       df <- separateFields(l) # separate fields
       df <- removeNullFields(df) # remove unuseful fields
@@ -204,10 +204,24 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     return(df)
     
   }
-    
   
-  print(object)
-  print(method)
+  addRows <- function(data) {
+    # data requested lack columns :
+    if (ncol(d[[object]][[method]])>ncol(data)) {
+      n <- ncol(d[[object]][[method]])-ncol(data)
+      cc <- tail(colnames(head(d[[object]][[method]])),n)
+      cc <- c(colnames(data),cc)
+      cc <- setNames(cbind(data,as.list(rep(NA,n))),cc)
+      d[[object]][[method]] <<- rbind(d[[object]][[method]],cc)
+      print(paste("*** alert :",n,"column(s) missing (compensated with NA columns)"))
+      # data requested has new columns :
+    } else if (ncol(d[[object]][[method]])<ncol(data)) {
+      stop("*** error :",n,"new columns detected")
+      # otherwise (ok) :
+    } else
+      d[[object]][[method]] <- rbind(d[[object]][[method]],data)
+  }
+    
   
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(period)) period <- "day"
@@ -233,23 +247,12 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   else {
     if (!updatable) {
       if (appendmode) {
-        # data requested lack columns :
-        if (ncol(d[[object]][[method]])>ncol(data)) {
-          n <- ncol(d[[object]][[method]])-ncol(data)
-          d[[object]][[method]] <<- rbind(d[[object]][[method]],cbind(data,as.list(rep(NA,n))))
-          print("*** alert :",n,"columns missing (compensated with NA columns)")
-          # data requested has new columns :
-        } else if (ncol(d[[object]][[method]])<ncol(data)) {
-          stop("*** error :",n,"new columns detected")
-          # otherwise (ok) :
-        } else
-          d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
-      }
-      else
+        addRows(data)
+      } else
         print("no action")
     } else {
       d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]
-      d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
+      addRows(data)
     }    
   }
   
