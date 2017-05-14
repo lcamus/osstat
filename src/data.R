@@ -1,11 +1,4 @@
 
-# exploreVisits <- function(visitorId) {
-#   #febbfc27e32025ad
-#   df <- d[["Live"]][["getLastVisitsDetails"]]
-#   df <- df[df$visitorId==visitorId,]
-#   sapply(names(df),function(x){if (df$x !="") print(df$x)})
-# }
-
 setNumeric <- function() {
   
   pattern <- c("nb_","max_","sum_","_count","avg_","min_")
@@ -51,10 +44,12 @@ getGID <- function(module,method) {
   
 }
 
-collectData <- function(from, to, filter_limit, visits) {
+collectData <- function(from, to, filter_limit, updatemode, appendmode, visits) {
   
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(visits)) visits <- F
+  if (missing(updatemode)) updatemode <- F
+  if (missing(appendmode)) appendmode <- F
   
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
@@ -65,8 +60,10 @@ collectData <- function(from, to, filter_limit, visits) {
       methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)})) 
     for (method in methods)
       for (day in days)
-        getData(as.Date(day,origin="1970-01-01", filter_limit=filter_limit), module, method, updatemode=T, appendmode=T) 
-        #print(paste(module,method,sep="!"))
+        getData(date=as.Date(day,origin="1970-01-01"),
+                object=module, method=method,
+                filter_limit=filter_limit,
+                updatemode=updatemode, appendmode=appendmode) 
   }
   
   save(d, file=fdata)
@@ -75,7 +72,10 @@ collectData <- function(from, to, filter_limit, visits) {
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
   
-  if (object=="" | method=="") return
+  if (object=="" | method=="") return(-1)
+  
+  #update only empty dataset for the period
+  if (!updatemode & !appendmode & nrow(d[[object]][[method]])>0) return(-1)
   
   require(stringi)
   options(stringsAsFactors=F)
@@ -213,7 +213,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       cc <- c(colnames(data),cc)
       cc <- setNames(cbind(data,as.list(rep(NA,n))),cc)
       d[[object]][[method]] <<- rbind(d[[object]][[method]],cc)
-      print(paste("*** alert :",n,"column(s) missing (compensated with NA columns)"))
+      print(paste("*** alert :",n,"column(s) missing (compensated with NA column(s))"))
       # data requested has new columns :
     } else if (ncol(d[[object]][[method]])<ncol(data)) {
       stop("*** error :",n,"new columns detected")
