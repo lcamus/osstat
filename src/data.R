@@ -188,7 +188,9 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       # read data in several calls for individual visits (heavy)
       breaks <- c("visitServerHour%3C7","visitServerHour%3E=7;visitServerHour%3C10","visitServerHour%3E=10;visitServerHour%3C20","visitServerHour%3E=20")
       l <- lapply(breaks,function(x) {
-        ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
+        #ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
+        ou <- url(description=paste0(u,"&segment=",x))
+        print(ou)
         res <- readLines(ou, warn=F)
         close(ou)
         return(res)
