@@ -74,8 +74,11 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
   if (object=="" | method=="") return(-1)
   
+  print(object)
+  print(method)
   #update only empty dataset for the period
-  if (!updatemode & !appendmode & nrow(d[[object]][[method]])>0) return(-1)
+  if (!updatemode & !appendmode & nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0) return(-1)
+  print("cont")
   
   require(stringi)
   options(stringsAsFactors=F)
@@ -109,7 +112,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
           stringsAsFactors=F)
       
       if (updatemode | appendmode) {
-        #d[[module]][[methodSub]] <<- d[[module]][[methodSub]][as.Date(d[[module]][[methodSub]]$date)!=date,]
         d[[module]][[methodSub]] <<- d[[module]][[methodSub]][d[[module]][[methodSub]]$date!=date |
                                                                 (d[[module]][[methodSub]]$date==date & 
                                                                    !d[[module]][[methodSub]]$visitServerHour %in% unique(df$visitServerHour)),]
@@ -119,10 +121,10 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       #append visits actions :
       
       methodSub <- "getLastVisitsDetails:Actions"
-      h_visits <- c("idVisit","step","field","value")
+      h_visits <- c("date","idVisit","step","field","value")
       if (is.null(d[[module]][[methodSub]]))
         d[[module]][[methodSub]] <<- data.frame(
-          matrix(vector(),0,4,dimnames=list(c(),h_visits)),
+          matrix(vector(),0,5,dimnames=list(c(),h_visits)),
           stringsAsFactors=F)
       
       if (updatemode | appendmode) {
@@ -138,6 +140,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         df_a <- cbind(rep(steps,nrow(df)),df_a)
         #idVisit :
         df_a <- cbind(as.numeric(sapply(df$idVisit,function(x) rep(x,length(c_actions)))),df_a)
+        #date :
+        df_a <- cbind(as.numeric(sapply(df$date,function(x) rep(x,length(c_actions)))),df_a)
         
         #delete empty actions
         df_a <- setNames(df_a,h_visits)
@@ -219,7 +223,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       stop("*** error :",n,"new columns detected")
       # otherwise (ok) :
     } else
-      d[[object]][[method]] <- rbind(d[[object]][[method]],data)
+      d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
   }
     
   
@@ -246,12 +250,13 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     lapply(data,function(x){getData_Live_getLastVisitsDetails(x)})
   else {
     if (!updatable) {
-      if (appendmode) {
-        addRows(data)
-      } else
-        print("no action")
+      addRows(data)
+      #if (appendmode) {
+      #   addRows(data)
+      # } else
+      #   print("no action")
     } else {
-      d[[object]][[method]] <- d[[object]][[method]][d[[object]][[method]]$date!=date,]
+      d[[object]][[method]] <<- d[[object]][[method]][d[[object]][[method]]$date!=date,]
       addRows(data)
     }    
   }
