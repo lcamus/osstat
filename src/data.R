@@ -51,16 +51,22 @@ getGID <- function(module,method) {
   
 }
 
-collectData <- function(from, to, filter_limit) {
+collectData <- function(from, to, filter_limit, visits) {
   
   if (missing(filter_limit)) filter_limit <- "-1"
+  if (missing(visits)) visits <- F
+  
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
   for (module in names(d)) {
-    methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)}))
+    if (!visits)
+      methods <- sapply(names(d[[module]]),function(x) gsub("^.*:.*$","",x))
+    else
+      methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)})) 
     for (method in methods)
       for (day in days)
         getData(as.Date(day,origin="1970-01-01", filter_limit=filter_limit), module, method, updatemode=T, appendmode=T) 
+        #print(paste(module,method,sep="!"))
   }
   
   save(d, file=fdata)
@@ -68,6 +74,8 @@ collectData <- function(from, to, filter_limit) {
 }
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
+  
+  if (object=="" | method=="") return
   
   require(stringi)
   options(stringsAsFactors=F)
@@ -187,7 +195,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     else {
       # nominal case (not heavy)
       ou <- url(description=u,encoding="UTF-16")
-      l <- readLines(ou, warn=F)
+      l <- readLines(ou, warn=T)
       close(ou)
       df <- separateFields(l) # separate fields
       df <- removeNullFields(df) # remove unuseful fields
@@ -224,8 +232,19 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     lapply(data,function(x){getData_Live_getLastVisitsDetails(x)})
   else {
     if (!updatable) {
-      if (appendmode)
-        d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
+      if (appendmode) {
+        # data requested lack columns :
+        if (ncol(d[[object]][[method]])>ncol(data)) {
+          n <- ncol(d[[object]][[method]])-ncol(data)
+          d[[object]][[method]] <<- rbind(d[[object]][[method]],cbind(data,as.list(rep(NA,n))))
+          print("*** alert :",n,"columns missing (compensated with NA columns)")
+          # data requested has new columns :
+        } else if (ncol(d[[object]][[method]])<ncol(data)) {
+          stop("*** error :",n,"new columns detected")
+          # otherwise (ok) :
+        } else
+          d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
+      }
       else
         print("no action")
     } else {
