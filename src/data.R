@@ -76,8 +76,13 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
   print(object)
   print(method)
+  
   #update only empty dataset for the period
-  if (!updatemode & !appendmode & nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0) return(-1)
+  if (object=="Live" & method=="getLastVisitsDetails")
+    submethod <- "getLastVisitsDetails:Visits"
+  else
+    submethod <- "getLastVisitsDetails"
+  if (!updatemode & !appendmode & nrow(d[[object]][[submethod]][d[[object]][[submethod]]$date==date,])>0) return(-1)
   print("cont")
   
   require(stringi)
@@ -141,7 +146,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         #idVisit :
         df_a <- cbind(as.numeric(sapply(df$idVisit,function(x) rep(x,length(c_actions)))),df_a)
         #date :
-        df_a <- cbind(as.numeric(sapply(df$date,function(x) rep(x,length(c_actions)))),df_a)
+        df_a <- cbind(as.character(sapply(df$date,function(x) rep(x,length(c_actions)))),df_a)
         
         #delete empty actions
         df_a <- setNames(df_a,h_visits)
@@ -188,9 +193,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       # read data in several calls for individual visits (heavy)
       breaks <- c("visitServerHour%3C7","visitServerHour%3E=7;visitServerHour%3C10","visitServerHour%3E=10;visitServerHour%3C20","visitServerHour%3E=20")
       l <- lapply(breaks,function(x) {
-        #ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
-        ou <- url(description=paste0(u,"&segment=",x))
-        print(ou)
+        ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
         res <- readLines(ou, warn=F)
         close(ou)
         return(res)
@@ -253,10 +256,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   else {
     if (!updatable) {
       addRows(data)
-      #if (appendmode) {
-      #   addRows(data)
-      # } else
-      #   print("no action")
     } else {
       d[[object]][[method]] <<- d[[object]][[method]][d[[object]][[method]]$date!=date,]
       addRows(data)
