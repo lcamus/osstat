@@ -150,7 +150,16 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         
         #delete empty actions
         df_a <- setNames(df_a,h_visits)
-        df_a <- df_a[sapply(as.numeric(rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])),function(x) seq(x,x+10)),]
+        actions_begin <- rownames(df_a[which(df_a$field=="type"),])
+        actions_end <- sapply(1:length(actions_begin),function(x){as.numeric(actions_begin[x+1])-1})
+        actions_end[length(actions_end)] <- max(rownames(df_a))
+        actions_full_begin <- rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])
+        actions_full_end <- actions_end[actions_begin %in% actions_full_begin]
+        res<-unlist(sapply(seq_along(actions_full_begin), function(x){actions_full_begin[x]:actions_full_end[x]}))
+        #df_a <- df_a[sapply(as.numeric(rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])),function(x) seq(x,x+10)),]
+        df_a <- df_a[res,]
+        base <- max(nrow(d[[module]][[methodSub]]))
+        row.names(df_a) <- seq(base+1,base+nrow(df_a))
         
         #append data in final structure
         d[[module]][[methodSub]] <<- rbind(d[[module]][[methodSub]],df_a)
