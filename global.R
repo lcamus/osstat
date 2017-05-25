@@ -3,6 +3,7 @@ source("src/util.R")
 loadPackages("stringi")
 loadPackages("rvest")
 loadPackages("visNetwork")
+loadPackages("shinydashboard")
 
 
 #shared variables :
