@@ -1,0 +1,40 @@
+---
+title: "osstat"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+```
+
+Column
+-----------------------------------------------------------------------
+
+### Chart A
+
+```{r}
+data<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=d[["UserCountry"]][["getCountry"]], sum),c("country","nb_visits","nb_actions"))
+par(mar = rep(4.5, 4))
+plot(data$nb_visits,data$nb_actions,main="traffic by country",xlab="nb visits",ylab="nb actions",col="blue",pch=19)
+text(data$nb_visits,data$nb_actions,labels=data$country,pos=3)
+
+```
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### Chart B
+
+```{r}
+
+```
+
+### Chart C
+
+```{r}
+
+```
+

@@ -3,7 +3,8 @@ source("src/util.R")
 loadPackages("stringi")
 loadPackages("rvest")
 loadPackages("visNetwork")
-loadPackages("shinydashboard")
+loadPackages("backports","flexdashboard")
+#loadPackages("shinydashboard")
 
 
 #shared variables :
