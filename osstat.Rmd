@@ -7,20 +7,36 @@ output:
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
+library(scatterD3)
 load("data/d.RData")
 ```
+
 
 Row
 -----------------------------------------------------------------------
 
 
-### Countries represented
+### Countries
 
 ```{r}
 data <- d[["UserCountry"]][["getCountry"]]
 value <- length(unique(data$metadata_code))
 valueBox(value, icon = "fa-globe")
 
+```
+
+### Visits
+
+```{r}
+value <- paste0(round(sum(as.numeric(data$nb_visits))/1000)," k")
+valueBox(value, icon = "fa-users")
+```
+
+### Actions
+
+```{r}
+value <- paste0(round(sum(as.numeric(data$nb_actions))/1000)," k")
+valueBox(value, icon = "fa-dot-circle-o")
 ```
 
 ### Days of traffic
@@ -30,30 +46,20 @@ value <- max(unique(data$date))-min(unique(data$date))
 valueBox(value, icon = "fa-calendar")
 ```
 
-### Visits (total)
-
-```{r}
-value <- sum(as.numeric(data$nb_visits))
-valueBox(value, icon = "fa-users")
-```
-
-### Actions (total)
-
-```{r}
-value <- sum(as.numeric(data$nb_actions))
-valueBox(value, icon = "fa-dot-circle-o")
-```
-
 Row
 -----------------------------------------------------------------------
 
-### Chart A
+### Traffic by Country
 
 ```{r}
-data<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=d[["UserCountry"]][["getCountry"]], sum),c("country","nb_visits","nb_actions"))
-par(mar = rep(4.5, 4))
-plot(data$nb_visits,data$nb_actions,main="total traffic by country",xlab="nb visits",ylab="nb actions",col="blue",pch=19)
-text(data$nb_visits,data$nb_actions,labels=data$country,pos=3)
+df<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=d[["UserCountry"]][["getCountry"]], sum),c("country","nb_visits","nb_actions"))
+df$class_visits <- with(df, ifelse(nb_visits<100, "<100",ifelse(nb_visits>500,">500","100..500")))
+#par(mar = rep(4.5, 4))
+#plot(data$nb_visits,data$nb_actions,main="total traffic by country",xlab="nb visits",ylab="nb actions",col="blue",pch=19)
+scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, col_var=class_visits, hover_size=4, hover_opacity=1, lab=country,
+          xlab="nb visits", ylab="nb actions", col_lab="nb visits")
+#data<-data[data$nb_visits>100,]
+#text(data$nb_visits,data$nb_actions,labels=data$country,pos=3)
 ```
 
 
