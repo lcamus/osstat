@@ -7,8 +7,11 @@ output:
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
-library(scatterD3)
+suppressMessages(library(scatterD3))
+library(slickR)
+library(svglite)
 load("data/d.RData")
+load("data/refCountry.RData")
 ```
 
 
@@ -50,16 +53,41 @@ Row
 -----------------------------------------------------------------------
 
 ### Traffic by Country
+```{r, results='asis'}
+i <- xmlSVG({plot(1:10)},standalone=TRUE)
+i <- paste0("data:image/svg+xml;utf8,",as.character(i))
+i <- paste0("<a href='",i,"'>example</a>")
+#print("<a href='http://example.com/' target='_blank'>example</a>", type="html")
+#print(paste0("<a href='",i,"'>example</a>"), type="html")
+#print("<a href=''>Image gif</a>", type="html")
+print(i)
+
+```
 
 ```{r}
+
 df<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=d[["UserCountry"]][["getCountry"]], sum),c("country","nb_visits","nb_actions"))
 df$class_visits <- with(df, ifelse(nb_visits<100, "<100",ifelse(nb_visits>500,">500","100..500")))
 #par(mar = rep(4.5, 4))
-#plot(data$nb_visits,data$nb_actions,main="total traffic by country",xlab="nb visits",ylab="nb actions",col="blue",pch=19)
-scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, col_var=class_visits, hover_size=4, hover_opacity=1, lab=country,
-          xlab="nb visits", ylab="nb actions", col_lab="nb visits")
-#data<-data[data$nb_visits>100,]
-#text(data$nb_visits,data$nb_actions,labels=data$country,pos=3)
+df <- merge(x=df,y=refCountry,by.x="country",by.y="code")
+
+tooltips <- paste("<b>",df$lib,"</b><br/>nb visits:",df$nb_visits,"<br/>nb actions:",df$nb_actions)
+
+s1 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, hover_size=4, hover_opacity=1, xlab="nb visits", ylab="nb actions", tooltip_text=tooltips)
+htmlwidgets::saveWidget(s1,'s1.html')
+
+s2 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, col_var=class_visits, hover_size=4, hover_opacity=1, lab=country, xlab="nb visits", ylab="nb actions", col_lab="nb visits", tooltip_text=tooltips)
+htmlwidgets::saveWidget(s2,'s2.html')
+
+slickR(c(paste0(readLines('s1.html'),collapse='\n'),
+         paste0(readLines('s2.html'),collapse='\n')),
+       slideId = "scatterD3",
+       slideIdx = list(1:2),
+       slideType = "iframe",
+       slickOpts = list(dots=T),
+       height='500px',width='120%')
+
 ```
+
 
 

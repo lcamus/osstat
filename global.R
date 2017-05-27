@@ -3,14 +3,14 @@ source("src/util.R")
 loadPackages("stringi")
 loadPackages("rvest")
 loadPackages("visNetwork")
-loadPackages("backports","flexdashboard")
-#loadPackages("shinydashboard")
 
 
 #shared variables :
 
 fdata <- "data/d.RData"
 fcodeData <- "data/codeData.RData"
+fCountrySrc <- "data/UserCountry_getCountryCodeMapping.csv"
+fCountry <- "data/refCountry.RData"
 base <- "https://utils.euro-area-statistics.org/admin/piwik/?module=API"
 idSite <- "1"
 format <- "CSV"
@@ -37,6 +37,15 @@ if (!exists("d") & file.exists(fdata)) {
   #Actions.getPageUrl, Actions.getPageTitle, Actions.getDownload, Actions.getOutlink : to study
   #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : issue related to enconding (fix result to check)
 }
+
+if (!exists("refCountry") & file.exists(fCountrySrc)) {
+  refCountry <- read.table(fCountry, header=T, sep=",", fileEncoding="UTF-16")
+  refCountry <- as.data.frame(t(refCountry))
+  refCountry <- cbind(rownames(refCountry),refCountry)
+  refCountry <- setNames(refCountry, c("code","lib"))
+  save(refCountry, file=fCountry)
+}
+  
 
 #hideCol <- list(UserCountry=list(getCountry=c("nb_visits_converted"), getContinent=c("nb_visits_converted"), getRegion=c("nb_visits_converted")))
 hideCol <- list()
