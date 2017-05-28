@@ -8,6 +8,8 @@ output:
 ```{r setup, include=FALSE}
 library(flexdashboard)
 suppressMessages(library(scatterD3))
+library(plotly)
+library(formattable)
 library(slickR)
 library(svglite)
 load("data/d.RData")
@@ -42,11 +44,13 @@ value <- paste0(round(sum(as.numeric(data$nb_actions))/1000)," k")
 valueBox(value, icon = "fa-dot-circle-o")
 ```
 
-### Days of traffic
+### Days
 
 ```{r}
-value <- max(unique(data$date))-min(unique(data$date))
-valueBox(value, icon = "fa-calendar")
+#value <- max(unique(data$date))-min(unique(data$date))
+begin <- min(data$date)
+value <- max(data$date)-begin
+valueBox(value, caption=paste0("Days (from ",begin,")"), icon = "fa-calendar")
 ```
 
 Row
@@ -60,28 +64,62 @@ df<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~meta
 
 clusters <- scale(df[,c("nb_visits","nb_actions")])
 fit <- kmeans(clusters,3)
-#df$class_visits <- with(df, ifelse(nb_visits<100, "<100",ifelse(nb_visits>500,">500","100..500")))
-df$cluster <- fit$cluster
+centers <- scale(fit$centers)
+centers$score <- with(centers,nb_visits+nb_actions)
+df$cluster <- order(-scale(fit$centers))[fit$cluster]
+#df$cluster <- fit$cluster
+
+df$ratio_visits <- percent(with(df, nb_visits/sum(nb_visits)),digits=1)
+df$ratio_actions <- percent(with(df, nb_actions/sum(nb_actions)),digits=1)
+df$score <- with(df, ((ratio_visits+ratio_actions)/2)*100)
 
 df <- merge(x=df,y=refCountry,by.x="country",by.y="code")
+print(names(df))
 
 tooltips <- paste("<b>",df$lib,"</b><br/>nb visits:",df$nb_visits,"<br/>nb actions:",df$nb_actions)
-
 s1 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, hover_size=4, hover_opacity=1, xlab="nb visits", ylab="nb actions", tooltip_text=tooltips)
 htmlwidgets::saveWidget(s1,'s1.html')
 
-s2 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, col_var=cluster, hover_size=4, hover_opacity=1, lab=country, xlab="cluster", ylab="nb actions", col_lab="nb visits", tooltip_text=tooltips)
+s2 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, col_var=cluster, hover_size=4, hover_opacity=1, lab=country, xlab="nb visits", ylab="nb actions", col_lab="cluster", tooltip_text=tooltips)
 htmlwidgets::saveWidget(s2,'s2.html')
 
+p1 <- plot_ly(df, labels=~cluster, values=~score, type='pie',
+              showlegend=T,
+              insidetextfont = list(color = '#FFFFFF'),
+              marker = list(colors = colors,
+                            line = list(color = '#FFFFFF', width = 1))
+) %>%
+  layout(showlegend=T)
+htmlwidgets::saveWidget(p1,'p1.html')
+
+t1 <- as.datatable(
+  formattable(
+    df[order(-df$score),c("lib","cluster","ratio_visits","ratio_actions","score")],
+    list(
+      cluster = formatter("span", style = x ~ ifelse(x == 1, 
+                                                     style(color = "orange", font.weight = "bold"), NA)),
+      #area(col = c(ratio_visits, ratio_actions)) ~ normalize_bar("pink", 0.2),
+      ratio_visits=color_bar("lightblue"),
+      ratio_actions=color_bar("lightblue"),
+      rank = formatter("span",
+                        style = score ~ style(color = ifelse(rank(-x) <= 3, "orange", "gray")),
+                        score ~ sprintf("%.2f (rank: %02d)", x, rank(-x))
+      )
+    )
+  ), rownames=F, class = "display; compact", filter="top"
+)
+htmlwidgets::saveWidget(t1,'t1.html')
+
 slickR(c(paste0(readLines('s1.html'),collapse='\n'),
-         paste0(readLines('s2.html'),collapse='\n')),
-       slideId = "scatterD3",
-       slideIdx = list(1:2),
+         paste0(readLines('s2.html'),collapse='\n'),
+         paste0(readLines('p1.html'),collapse='\n'),
+         paste0(readLines('t1.html'),collapse='\n')),
+       slideId = "countries",
+       slideIdx = list(1:4),
        slideType = "iframe",
        slickOpts = list(dots=T),
-       height='500px',width='120%')
+       height='500px',width='100%')
 
 ```
-
 
 
