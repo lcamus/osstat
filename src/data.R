@@ -244,6 +244,13 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   }
   
   addRows <- function(data) {
+    
+    #test if the result request has the usual variables:
+    n_d_om <- names(d[[object]][[method]])
+    n_data <- names(data)
+    if (!all(n_d_om %in% n_data))
+      data[,n_d_om[which(!n_d_om %in% n_data)]] <-NA # fit missing variables with NA values
+    
     # data requested lack columns :
     if (ncol(d[[object]][[method]])>ncol(data)) {
       n <- ncol(d[[object]][[method]])-ncol(data)
@@ -258,6 +265,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       # otherwise (ok) :
     } else
       d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
+    
   }
     
   
