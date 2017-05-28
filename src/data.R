@@ -73,6 +73,9 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits) 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
   
   if (object=="" | method=="") return(-1)
+  if (missing(filter_limit)) filter_limit <- "-1"
+  if (missing(updatemode)) updatemode <- F
+  if (missing(appendmode)) appendmode <- F
   
   print(object)
   print(method)
@@ -81,9 +84,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   if (object=="Live" & method=="getLastVisitsDetails")
     submethod <- "getLastVisitsDetails:Visits"
   else
-    submethod <- "getLastVisitsDetails"
+    submethod <- method
   if (!updatemode & !appendmode & nrow(d[[object]][[submethod]][d[[object]][[submethod]]$date==date,])>0) return(-1)
-  print("cont")
   
   require(stringi)
   options(stringsAsFactors=F)
@@ -156,7 +158,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         actions_full_begin <- rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])
         actions_full_end <- actions_end[actions_begin %in% actions_full_begin]
         res<-unlist(sapply(seq_along(actions_full_begin), function(x){actions_full_begin[x]:actions_full_end[x]}))
-        #df_a <- df_a[sapply(as.numeric(rownames(df_a[which(df_a$field=="type" & df_a$value!=""),])),function(x) seq(x,x+10)),]
         df_a <- df_a[res,]
         
         #append data in final structure
@@ -220,9 +221,22 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       # nominal case (not heavy)
       ou <- url(description=u,encoding="UTF-16")
       l <- readLines(ou, warn=F)
+      #error catch:
+      hash <- ""
+      if (length(l)==1)
+        if (nchar(l)<10) {
+          hash <- digest(l,algo="md5")
+          print(hash)
+        }
       close(ou)
-      df <- separateFields(l) # separate fields
-      df <- removeNullFields(df) # remove unuseful fields
+      if (hash=="95674154942e7730d6b5b6eb4486f376") {
+        # no data
+        print("no data")
+        df <- NULL
+      } else {
+        df <- separateFields(l) # separate fields
+        df <- removeNullFields(df) # remove unuseful fields        
+      }
     }
       
     return(df)
@@ -237,10 +251,10 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       cc <- c(colnames(data),cc)
       cc <- setNames(cbind(data,as.list(rep(NA,n))),cc)
       d[[object]][[method]] <<- rbind(d[[object]][[method]],cc)
-      print(paste("*** alert :",n,"column(s) missing (compensated with NA column(s))"))
+      print(paste0("*** alert: ",n," column(s) missing (compensated with NA column(s))"))
       # data requested has new columns :
     } else if (ncol(d[[object]][[method]])<ncol(data)) {
-      stop("*** error :",n,"new columns detected")
+      stop("*** error: new columns detected")
       # otherwise (ok) :
     } else
       d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
@@ -261,10 +275,12 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   if (!updatable |(updatable & updatemode)) {
     # get the data from the API
     data <- getData_APICall()
-    
   }
   else
     return
+  
+  if (is.null(data)) # no data
+    return(0)
   
   if (object=="Live" & method=="getLastVisitsDetails")
     lapply(data,function(x){getData_Live_getLastVisitsDetails(x)})

@@ -3,6 +3,9 @@ source("src/util.R")
 loadPackages("stringi")
 loadPackages("rvest")
 loadPackages("visNetwork")
+loadPackages("shiny")
+loadPackages("DT")
+loadPackages("digest")
 
 
 #shared variables :

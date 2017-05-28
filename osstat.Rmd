@@ -53,16 +53,6 @@ Row
 -----------------------------------------------------------------------
 
 ### Traffic by Country
-```{r, results='asis'}
-i <- xmlSVG({plot(1:10)},standalone=TRUE)
-i <- paste0("data:image/svg+xml;utf8,",as.character(i))
-i <- paste0("<a href='",i,"'>example</a>")
-#print("<a href='http://example.com/' target='_blank'>example</a>", type="html")
-#print(paste0("<a href='",i,"'>example</a>"), type="html")
-#print("<a href=''>Image gif</a>", type="html")
-print(i)
-
-```
 
 ```{r}
 
