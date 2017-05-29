@@ -7,14 +7,16 @@ output:
 
 ```{r setup, include=FALSE}
 library(flexdashboard)
-suppressMessages(library(scatterD3))
+suppressMessages({
+  library(scatterD3)
+  library(ggplot2)
+})
 library(plotly)
 library(countrycode)
 library(formattable)
 library(slickR)
 library(svglite)
 library(dplyr)
-library(ggplot2)
 load("data/d.RData")
 load("data/refCountry.RData")
 ```
@@ -94,7 +96,7 @@ valueBox(paste0(value," %"), icon = "fa-futbol-o", color=ifelse(value>0,"warning
 Row
 -----------------------------------------------------------------------
 
-```{r}
+```{r fig.width=500}
 
 data_vs <- d[["VisitsSummary"]][["get"]]
 data_vs <- data_vs[order(data_vs$date),]
@@ -119,17 +121,13 @@ d_m<-d_m[order(d_m$date),]
 vf_1 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position="fill") +
   ggtitle("visits from visitors (Returning vs New)") +
   scale_fill_discrete(name = "visitors") +
-  labs(x="",y="")
+  labs(x="",y="") +
+  scale_fill_brewer(palette="Spectral")
+  
 
-htmlwidgets::saveWidget(vf_1,'vf_1.html',selfcontained=F)
+toSVG <- list(xmlSVG({show(vf_1)},standalone=T))
+s.in=sapply(toSVG,function(sv){paste0("data:image/svg+xml;utf8,",as.character(sv))})
+slickR(s.in,slideId = 'vf',slickOpts = list(dots=T), height = 500,width = '100%')
 
-
-# carousel to embed all the charts
-slickR(c(paste0(readLines('vf_1.html'),collapse='\n')),
-       slideId = "vs",
-       slideIdx = list(1:1),
-       slideType = "iframe",
-       slickOpts = list(dots=T),
-       height='500px',width='100%')
 
 ```
