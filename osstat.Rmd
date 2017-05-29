@@ -17,15 +17,24 @@ load("data/d.RData")
 load("data/refCountry.RData")
 ```
 
+Countries
+===================================== 
 
 Row
 -----------------------------------------------------------------------
 
+### Days
+
+```{r}
+data <- d[["UserCountry"]][["getCountry"]]
+begin <- min(data$date)
+value <- max(data$date)-begin
+valueBox(value, caption=paste0("Days (from ",begin,")"), icon = "fa-calendar")
+```
 
 ### Countries
 
 ```{r}
-data <- d[["UserCountry"]][["getCountry"]]
 value <- length(unique(data$metadata_code))
 valueBox(value, icon = "fa-globe")
 
@@ -45,15 +54,6 @@ value <- paste0(round(sum(as.numeric(data$nb_actions))/1000)," k")
 valueBox(value, icon = "fa-dot-circle-o")
 ```
 
-### Days
-
-```{r}
-#value <- max(unique(data$date))-min(unique(data$date))
-begin <- min(data$date)
-value <- max(data$date)-begin
-valueBox(value, caption=paste0("Days (from ",begin,")"), icon = "fa-calendar")
-```
-
 Row
 -----------------------------------------------------------------------
 
@@ -61,40 +61,66 @@ Row
 
 ```{r}
 
-df<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=d[["UserCountry"]][["getCountry"]], sum),c("country","nb_visits","nb_actions"))
+# df<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=d[["UserCountry"]][["getCountry"]], sum),c("country","nb_visits","nb_actions"))
+df <- d[["UserCountry"]][["getCountry"]]
+df$ratio_uniq_v <- with(df,as.numeric(nb_uniq_visitors)/as.numeric(nb_visits))
+
+df.sum <- setNames(
+  aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=df, sum),
+  c("country","nb_visits","nb_actions")
+)
+df.mean <- setNames(
+  aggregate(cbind(ratio_uniq_v)~metadata_code,data=df, mean),
+  c("country","ratio_uniq_v")
+)
+df <- merge(df.sum,df.mean,by=c("country"))
+
+# df.sum <- setNames(
+#   aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~metadata_code,data=d[["UserCountry"]][["getCountry"]], sum),
+#   c("country","nb_visits","nb_actions")
+# )
+# df.mean <- setNames(
+#   aggregate(cbind(ratio_uniq_v)~metadata_code,data=d[["UserCountry"]][["getCountry"]], mean),
+#   c("country","ratio_uniq_v")
+# )
+# df <- merge(df.sum,df.mean,by=c("country"))
 
 clusters <- scale(df[,c("nb_visits","nb_actions")])
 fit <- kmeans(clusters,3)
-centers <- as.data.frame(scale(fit$centers))
+centers <- as.data.frame(fit$centers)
 centers$score <- with(centers,nb_visits+nb_actions)
-#df$cluster <- order(-scale(fit$centers))[fit$cluster]
-df$cluster <- order(-centers$score)[fit$cluster]
-#df$cluster <- fit$cluster
+df$cluster <- fit$cluster
+df$cluster <- order(-centers$score)[df$cluster]
 
 df$ratio_visits <- percent(with(df, nb_visits/sum(nb_visits)),digits=1)
 df$ratio_actions <- percent(with(df, nb_actions/sum(nb_actions)),digits=1)
-df$score <- percent(with(df, (ratio_visits+ratio_actions)/2),digits=1)
+df$score <- with(df, (ratio_visits+ratio_actions)/2)
 
 df <- merge(x=df,y=refCountry,by.x="country",by.y="code")
 
+# first scatter plot
 tooltips <- paste("<b>",df$lib,"</b><br/>nb visits:",df$nb_visits,"<br/>nb actions:",df$nb_actions)
 s1 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, hover_size=4, hover_opacity=1, xlab="nb visits", ylab="nb actions", tooltip_text=tooltips)
 htmlwidgets::saveWidget(s1,'s1.html')
 
+# second one
 s2 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, col_var=cluster, hover_size=4, hover_opacity=1, lab=country, xlab="nb visits", ylab="nb actions", col_lab="cluster", tooltip_text=tooltips)
 htmlwidgets::saveWidget(s2,'s2.html')
 
-p1 <- plot_ly(aggregate(score~cluster,df,sum), labels=~cluster, values=~score, type='pie',
+# pie chart
+p1 <- plot_ly(aggregate(score~cluster,df,sum), labels=~paste0("cluster ",cluster), values=~round(score*100), type='pie',
               showlegend=T,
               insidetextfont = list(color = '#FFFFFF'),
-              marker = list(colors = c("green","red","blue"),
+              marker = list(colors = c("lightgreen","lightcoral","lightblue"),
                             line = list(color = '#FFFFFF', width = 1))
 ) %>%
-  layout(showlegend=T)
+  layout(showlegend=T, title="part of traffic by country cluster")
 htmlwidgets::saveWidget(p1,'p1.html')
 
+# table
 data <- df[order(-df$score),c("lib","cluster","score")]
 data$rank <- 1:nrow(data)
+data$score <- percent(data$score,digits=1)
 data <- setNames(data,c("country","cluster","score","rank"))
 t1 <- as.datatable(
   formattable(
@@ -125,23 +151,59 @@ m1 <-  plot_geo(df) %>%
     locations=~countrycode(as.vector(country),origin="iso2c",destination="iso3c"),
     text=~lib,
     marker = list(line = l),
-    colors='Blues'
+    #colors='Blues'
+    colors="blue"
   ) %>%
-  layout(geo=g, title="") %>%
+  layout(geo=g, title="traffic by country area") %>%
   colorbar(title = '% of global traffic')
 htmlwidgets::saveWidget(m1,'m1.html')
 
+# bar chart
+data <- df[df$cluster==1,]
+b1 <- plot_ly(
+  x=round(data$nb_uniq_visitors), y=as.character(data$lib),
+  type="bar", orientation="h", marker=list(color="lightgreen")
+) %>%
+  layout(
+    title="average number of unique visitor per day for cluster #1",
+    margin = list(l=100)
+    ) %>%
+  add_annotations(xref = 'x1', yref = 'y',
+                  x = round(data$nb_uniq_visitors),  y = as.character(data$lib),
+                  text = paste0("   ",round(data$nb_uniq_visitors)),
+                  font = list(family = 'Arial', size = 14),
+                  showarrow = FALSE)
+htmlwidgets::saveWidget(b1,'b1.html')
+
+data <- df[df$cluster==2,]
+b2 <- plot_ly(
+  x=round(data$nb_uniq_visitors), y=as.character(data$lib),
+  type="bar", orientation="h", marker=list(color="lightcoral")
+) %>%
+  layout(
+    title="average number of unique visitor per day for cluster #2",
+    margin = list(l=100)
+  ) %>%
+  add_annotations(xref = 'x1', yref = 'y',
+                  x = round(data$nb_uniq_visitors),  y = as.character(data$lib),
+                  text = paste0("  ",round(data$nb_uniq_visitors)),
+                  font = list(family = 'Arial', size = 14),
+                  showarrow = FALSE)
+htmlwidgets::saveWidget(b2,'b2.html')
+
+# carousel to embed all the charts
 slickR(c(paste0(readLines('s1.html'),collapse='\n'),
          paste0(readLines('s2.html'),collapse='\n'),
          paste0(readLines('p1.html'),collapse='\n'),
          paste0(readLines('t1.html'),collapse='\n'),
-         paste0(readLines('m1.html'),collapse='\n')),
+         paste0(readLines('m1.html'),collapse='\n'),
+         paste0(readLines('b1.html'),collapse='\n'),
+         paste0(readLines('b2.html'),collapse='\n')),
        slideId = "countries",
-       slideIdx = list(1:5),
+       slideIdx = list(1:7),
        slideType = "iframe",
        slickOpts = list(dots=T),
-       #       height='500px',width='100%')
-       height='500px',width='1400px')
+       height='500px',width='100%')
 
 ```
 

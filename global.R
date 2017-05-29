@@ -52,7 +52,7 @@ if (!exists("refCountry") & file.exists(fCountrySrc)) {
 
 #hideCol <- list(UserCountry=list(getCountry=c("nb_visits_converted"), getContinent=c("nb_visits_converted"), getRegion=c("nb_visits_converted")))
 hideCol <- list()
-fieldstoremove <- c("metadata_logo","metadata_logoWidth","metadata_logoHeight", "nb_visits_converted","pluginsIcons")  
+fieldstoremove <- c("metadata_logo","metadata_logoWidth","metadata_logoHeight", "nb_visits_converted","pluginsIcons","conversions","revenue")  
 
 if (!exists("codeData") & file.exists(fcodeData)) {
   load(fcodeData)
