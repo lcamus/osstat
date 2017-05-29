@@ -1,0 +1,135 @@
+---
+title: "osstat"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+suppressMessages(library(scatterD3))
+library(plotly)
+library(countrycode)
+library(formattable)
+library(slickR)
+library(svglite)
+library(dplyr)
+library(ggplot2)
+load("data/d.RData")
+load("data/refCountry.RData")
+```
+
+Countries
+===================================== 
+
+Visits summary
+===================================== 
+
+Visit frequency
+===================================== 
+
+```{r}
+growth <- function(v) {
+  growth0 <- function(x)x/lag(x)-1  
+  l <- lowess(v)
+  res <- round(growth0(c(l$y[1],l$y[length(l$y)]))*100)
+  res <- res[2]
+  return(res)
+}
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Days
+
+```{r}
+data <- d[["VisitFrequency"]][["get"]]
+data <- data[order(data$date),]
+begin <- min(data$date)
+value <- max(data$date)-begin
+valueBox(value, caption=paste0("Days (from ",begin,")"), icon = "fa-calendar")
+```
+
+### Returning Visits (Average Growth Rate)
+
+```{r}
+data$nb_visits_returning <- as.numeric(as.character(data$nb_visits_returning))
+value <- growth(data$nb_visits_returning)
+valueBox(paste0(value," %"), icon = "fa-users", color=ifelse(value>0,"success","warning"))
+```
+
+### Returning Unique visitors (AGR)
+
+```{r}
+data$nb_uniq_visitors <- as.numeric(as.character(data$nb_uniq_visitors_returning))
+value <- growth(data$nb_uniq_visitors_returning)
+valueBox(paste0(value," %"), icon = "fa-user-plus", color=ifelse(value>0,"success","warning"))
+```
+
+### Returning Actions (AGR)
+
+```{r}
+data$nb_actions_returning <- as.numeric(as.character(data$nb_actions_returning))
+value <- growth(data$nb_actions_returning)
+valueBox(paste0(value," %"), icon = "fa-dot-circle-o", color=ifelse(value>0,"success","warning"))
+```
+
+### Returning Average time on site (AGR)
+
+```{r}
+data$avg_time_on_site_returning <- as.numeric(as.character(data$avg_time_on_site_returning))
+value <- growth(data$avg_time_on_site_returning)
+valueBox(paste0(value," %"), icon = "fa-clock-o", color=ifelse(value>0,"success","warning"))
+```
+
+### Returning Bounce rate (AGR)
+
+```{r}
+data$bounce_rate_returning <- as.numeric(gsub("%","",as.character(data$bounce_rate_returning)))
+value <- growth(data$bounce_rate_returning)
+valueBox(paste0(value," %"), icon = "fa-futbol-o", color=ifelse(value>0,"warning","success"))
+```
+
+Row
+-----------------------------------------------------------------------
+
+```{r}
+
+data_vs <- d[["VisitsSummary"]][["get"]]
+data_vs <- data_vs[order(data_vs$date),]
+data_vs$nb_visits <- as.numeric(as.character(data_vs$nb_visits))
+
+d_ret <- data
+d_ret$val <- d_ret$nb_visits_returning/data_vs$nb_visits
+l <- lowess(d_ret$val)
+d_ret$val <- l$y
+d_ret$type <- "Returning"
+d_ret <- d_ret[,c("date","type","val")]
+
+d_new <- d_ret
+d_new$val <- 1-d_new$val
+d_new$type <- "New"
+d_new <- d_new[,c("date","type","val")]
+
+d_m <- rbind(d_new,d_ret)
+d_m<-d_m[order(d_m$date),]
+
+#stacked area chart (visits)
+vf_1 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position="fill") +
+  ggtitle("visits from visitors (Returning vs New)") +
+  scale_fill_discrete(name = "visitors") +
+  labs(x="",y="")
+
+htmlwidgets::saveWidget(vf_1,'vf_1.html',selfcontained=F)
+
+
+# carousel to embed all the charts
+slickR(c(paste0(readLines('vf_1.html'),collapse='\n')),
+       slideId = "vs",
+       slideIdx = list(1:1),
+       slideType = "iframe",
+       slickOpts = list(dots=T),
+       height='500px',width='100%')
+
+```

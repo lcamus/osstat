@@ -14,6 +14,7 @@ library(formattable)
 library(slickR)
 library(svglite)
 library(dplyr)
+library(growthrates)
 load("data/d.RData")
 load("data/refCountry.RData")
 ```
@@ -191,6 +192,15 @@ slickR(c(paste0(readLines('s1.html'),collapse='\n'),
 
 Visits summary
 ===================================== 
+```{r}
+growth <- function(v) {
+  growth0 <- function(x)x/lag(x)-1  
+  l <- lowess(v)
+  res <- round(growth0(c(l$y[1],l$y[length(l$y)]))*100)
+  res <- res[2]
+  return(res)
+}
+```
 
 Row
 -----------------------------------------------------------------------
@@ -208,9 +218,8 @@ valueBox(value, caption=paste0("Days (from ",begin,")"), icon = "fa-calendar")
 ### Visits (Average Growth Rate)
 
 ```{r}
-growth <- function(x)x/lag(x)-1
 data$nb_visits <- as.numeric(as.character(data$nb_visits))
-value <- round(mean(growth(data$nb_visits),na.rm=T)*100)
+value <- growth(data$nb_visits)
 valueBox(paste0(value," %"), icon = "fa-users", color=ifelse(value>0,"success","warning"))
 ```
 
@@ -218,7 +227,7 @@ valueBox(paste0(value," %"), icon = "fa-users", color=ifelse(value>0,"success","
 
 ```{r}
 data$nb_uniq_visitors <- as.numeric(as.character(data$nb_uniq_visitors))
-value <- round(mean(growth(data$nb_uniq_visitors),na.rm=T)*100)
+value <- growth(data$nb_uniq_visitors)
 valueBox(paste0(value," %"), icon = "fa-user-plus", color=ifelse(value>0,"success","warning"))
 ```
 
@@ -226,7 +235,7 @@ valueBox(paste0(value," %"), icon = "fa-user-plus", color=ifelse(value>0,"succes
 
 ```{r}
 data$nb_actions <- as.numeric(as.character(data$nb_actions))
-value <- round(mean(growth(data$nb_actions),na.rm=T)*100)
+value <- growth(data$nb_actions)
 valueBox(paste0(value," %"), icon = "fa-dot-circle-o", color=ifelse(value>0,"success","warning"))
 ```
 
@@ -234,16 +243,16 @@ valueBox(paste0(value," %"), icon = "fa-dot-circle-o", color=ifelse(value>0,"suc
 
 ```{r}
 data$avg_time_on_site <- as.numeric(as.character(data$avg_time_on_site))
-value <- round(mean(growth(data$avg_time_on_site),na.rm=T)*100)
+value <- growth(data$avg_time_on_site)
 valueBox(paste0(value," %"), icon = "fa-clock-o", color=ifelse(value>0,"success","warning"))
 ```
 
 ### Bounce rate (AGR)
 
 ```{r}
-data$bounce_rate <- as.numeric(as.character(data$bounce_rate))
-value <- round(mean(growth(data$bounce_rate),na.rm=T)*100)
-valueBox(paste0(value," %"), icon = "fa-futbol-o", color=ifelse(value<50,"success","warning"))
+data$bounce_rate <- as.numeric(gsub("%","",as.character(data$bounce_rate)))
+value <- growth(data$bounce_rate)
+valueBox(paste0(value," %"), icon = "fa-futbol-o", color=ifelse(value>0,"warning","success"))
 ```
 
 Row
@@ -303,17 +312,33 @@ vs_5 <- plot_ly(x=data$date, y=round(data$avg_time_on_site), type="scatter", mod
 
 htmlwidgets::saveWidget(vs_5,'vs_5.html')
 
+#bounce rate:
+l <- lowess(data$bounce_rate)
+l$x <- data$date
+l<- as.data.frame(l)
+vs_6 <- plot_ly(x=data$date, y=round(data$bounce_rate), type="scatter", mode="lines", line=list(color="lightblue"), name="unadjusted") %>%
+  add_trace(y=round(l$y),line=list(color="red"), name="smoothed") %>%
+  layout(title = "bounce rate",
+         yaxis = list (title = "bounce rate"))
+
+htmlwidgets::saveWidget(vs_6,'vs_6.html')
+
 
 # carousel to embed all the charts
 slickR(c(paste0(readLines('vs_1.html'),collapse='\n'),
          paste0(readLines('vs_2.html'),collapse='\n'),
          paste0(readLines('vs_3.html'),collapse='\n'),
          paste0(readLines('vs_4.html'),collapse='\n'),
-         paste0(readLines('vs_5.html'),collapse='\n')),
+         paste0(readLines('vs_5.html'),collapse='\n'),
+         paste0(readLines('vs_6.html'),collapse='\n')),
        slideId = "vs",
-       slideIdx = list(1:5),
+       slideIdx = list(1:6),
        slideType = "iframe",
        slickOpts = list(dots=T),
        height='500px',width='100%')
 
 ```
+
+Visit frequency
+===================================== 
+

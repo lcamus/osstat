@@ -173,6 +173,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
   getData_APICall <- function() {
     
+    require("digest")
+    
     separateFields <- function(l) {
       pattern <- ",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)"
       df <- as.data.frame(t(as.data.frame(lapply(l[-1],function(x){stri_split(str=x,regex=pattern)[[1]]}))))
