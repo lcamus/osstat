@@ -9,6 +9,7 @@ output:
 library(flexdashboard)
 suppressMessages(library(scatterD3))
 library(plotly)
+library(countrycode)
 library(formattable)
 library(slickR)
 library(svglite)
@@ -64,17 +65,17 @@ df<-setNames(aggregate(cbind(as.numeric(nb_visits), as.numeric(nb_actions))~meta
 
 clusters <- scale(df[,c("nb_visits","nb_actions")])
 fit <- kmeans(clusters,3)
-centers <- scale(fit$centers)
+centers <- as.data.frame(scale(fit$centers))
 centers$score <- with(centers,nb_visits+nb_actions)
-df$cluster <- order(-scale(fit$centers))[fit$cluster]
+#df$cluster <- order(-scale(fit$centers))[fit$cluster]
+df$cluster <- order(-centers$score)[fit$cluster]
 #df$cluster <- fit$cluster
 
 df$ratio_visits <- percent(with(df, nb_visits/sum(nb_visits)),digits=1)
 df$ratio_actions <- percent(with(df, nb_actions/sum(nb_actions)),digits=1)
-df$score <- with(df, ((ratio_visits+ratio_actions)/2)*100)
+df$score <- percent(with(df, (ratio_visits+ratio_actions)/2),digits=1)
 
 df <- merge(x=df,y=refCountry,by.x="country",by.y="code")
-print(names(df))
 
 tooltips <- paste("<b>",df$lib,"</b><br/>nb visits:",df$nb_visits,"<br/>nb actions:",df$nb_actions)
 s1 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, hover_size=4, hover_opacity=1, xlab="nb visits", ylab="nb actions", tooltip_text=tooltips)
@@ -83,42 +84,64 @@ htmlwidgets::saveWidget(s1,'s1.html')
 s2 <- scatterD3(data=df, x=nb_visits, y=nb_actions, point_opacity=0.5, col_var=cluster, hover_size=4, hover_opacity=1, lab=country, xlab="nb visits", ylab="nb actions", col_lab="cluster", tooltip_text=tooltips)
 htmlwidgets::saveWidget(s2,'s2.html')
 
-p1 <- plot_ly(df, labels=~cluster, values=~score, type='pie',
+p1 <- plot_ly(aggregate(score~cluster,df,sum), labels=~cluster, values=~score, type='pie',
               showlegend=T,
               insidetextfont = list(color = '#FFFFFF'),
-              marker = list(colors = colors,
+              marker = list(colors = c("green","red","blue"),
                             line = list(color = '#FFFFFF', width = 1))
 ) %>%
   layout(showlegend=T)
 htmlwidgets::saveWidget(p1,'p1.html')
 
+data <- df[order(-df$score),c("lib","cluster","score")]
+data$rank <- 1:nrow(data)
+data <- setNames(data,c("country","cluster","score","rank"))
 t1 <- as.datatable(
   formattable(
-    df[order(-df$score),c("lib","cluster","ratio_visits","ratio_actions","score")],
+    data,
     list(
       cluster = formatter("span", style = x ~ ifelse(x == 1, 
                                                      style(color = "orange", font.weight = "bold"), NA)),
-      #area(col = c(ratio_visits, ratio_actions)) ~ normalize_bar("pink", 0.2),
-      ratio_visits=color_bar("lightblue"),
-      ratio_actions=color_bar("lightblue"),
-      rank = formatter("span",
-                        style = score ~ style(color = ifelse(rank(-x) <= 3, "orange", "gray")),
-                        score ~ sprintf("%.2f (rank: %02d)", x, rank(-x))
-      )
+      score=color_bar("lightblue"),
+      rank = formatter("span", x~paste0("#",x))
     )
-  ), rownames=F, class = "display; compact", filter="top"
-)
+  ),
+  rownames=F, class = "compact order-column hover", filter="top",
+  options=list(columnDefs=list(list(className='dt-center',targets=c(1,3))))
+) %>%
+  DT::formatStyle(c("rank"),fontWeight="bold")
 htmlwidgets::saveWidget(t1,'t1.html')
+
+# geo map
+g <- list(
+  showframe = F,
+  showcoastlines = T,
+  projection = list(type = 'Mercator')
+)
+l <- list(color = toRGB("grey"), width = 0.5)
+m1 <-  plot_geo(df) %>%
+  add_trace(
+    z=~round(score*100,1),
+    locations=~countrycode(as.vector(country),origin="iso2c",destination="iso3c"),
+    text=~lib,
+    marker = list(line = l),
+    colors='Blues'
+  ) %>%
+  layout(geo=g, title="") %>%
+  colorbar(title = '% of global traffic')
+htmlwidgets::saveWidget(m1,'m1.html')
 
 slickR(c(paste0(readLines('s1.html'),collapse='\n'),
          paste0(readLines('s2.html'),collapse='\n'),
          paste0(readLines('p1.html'),collapse='\n'),
-         paste0(readLines('t1.html'),collapse='\n')),
+         paste0(readLines('t1.html'),collapse='\n'),
+         paste0(readLines('m1.html'),collapse='\n')),
        slideId = "countries",
-       slideIdx = list(1:4),
+       slideIdx = list(1:5),
        slideType = "iframe",
        slickOpts = list(dots=T),
-       height='500px',width='100%')
+       #       height='500px',width='100%')
+       height='500px',width='1400px')
 
 ```
 
