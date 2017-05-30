@@ -100,32 +100,71 @@ Row
 
 data_vs <- d[["VisitsSummary"]][["get"]]
 data_vs <- data_vs[order(data_vs$date),]
-data_vs$nb_visits <- as.numeric(as.character(data_vs$nb_visits))
 
-d_ret <- data
-d_ret$val <- d_ret$nb_visits_returning/data_vs$nb_visits
-l <- lowess(d_ret$val)
-d_ret$val <- l$y
-d_ret$type <- "Returning"
-d_ret <- d_ret[,c("date","type","val")]
-
-d_new <- d_ret
-d_new$val <- 1-d_new$val
-d_new$type <- "New"
-d_new <- d_new[,c("date","type","val")]
-
-d_m <- rbind(d_new,d_ret)
-d_m<-d_m[order(d_m$date),]
+getNewvsRet <- function(vr, vs) {
+  
+  #data_vs[,c(vs)] <- as.numeric(as.character(data_vs[,c(vs)]))
+  
+  d_ret <- data
+  d_ret$val <- as.numeric(as.character(d_ret[,c(vr)]))/as.numeric(as.character(data_vs[,c(vs)]))
+  l <- lowess(d_ret$val)
+  d_ret$val <- l$y
+  d_ret$type <- "Returning"
+  d_ret <- d_ret[,c("date","type","val")]
+  
+  d_new <- d_ret
+  d_new$val <- 1-d_new$val
+  d_new$type <- "New"
+  d_new <- d_new[,c("date","type","val")]
+  
+  d_m <- rbind(d_new,d_ret)
+  d_m<-d_m[order(d_m$date),]
+  
+  return(d_m)
+  
+}
 
 #stacked area chart (visits)
+
+d_m <- getNewvsRet("nb_visits_returning","nb_visits")
+
 vf_1 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position="fill") +
   ggtitle("visits from visitors (Returning vs New)") +
   scale_fill_discrete(name = "visitors") +
   labs(x="",y="") +
-  scale_fill_brewer(palette="Purples")
+  scale_fill_brewer(palette="PiYG")
   
+d_m <- getNewvsRet("nb_uniq_visitors_returning","nb_uniq_visitors")
 
-toSVG <- list(xmlSVG({show(vf_1)},standalone=T))
+vf_2 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position="fill") +
+  ggtitle("unique visitors (Returning vs New)") +
+  scale_fill_discrete(name = "unique visitors") +
+  labs(x="",y="") +
+  scale_fill_brewer(palette="PRGn")
+
+d_m <- getNewvsRet("nb_actions_returning","nb_actions")
+
+vf_3 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position="fill") +
+  ggtitle("actions (from Returning vs New visitors)") +
+  scale_fill_discrete(name = "actions") +
+  labs(x="",y="") +
+  scale_fill_brewer(palette="Set3")
+
+d_m <- getNewvsRet("avg_time_on_site_returning","avg_time_on_site")
+
+vf_4 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position="fill") +
+  ggtitle("average time on site (from Returning vs New visitors)") +
+  scale_fill_discrete(name = "average time") +
+  labs(x="",y="") +
+  scale_fill_brewer(palette="BrBG")
+
+toSVG <- list(
+  xmlSVG({show(vf_1)},standalone=T),
+  xmlSVG({show(vf_2)},standalone=T),
+  xmlSVG({show(vf_3)},standalone=T),
+  xmlSVG({show(vf_4)},standalone=T)
+)
+
 s.in=sapply(toSVG,function(sv){paste0("data:image/svg+xml;utf8,",as.character(sv))})
 slickR(s.in,slideId = 'vf',slickOpts = list(dots=T), height = 500,width = '100%')
 
