@@ -96,7 +96,7 @@ valueBox(paste0(value," %"), icon = "fa-futbol-o", color=ifelse(value>0,"warning
 Row
 -----------------------------------------------------------------------
 
-```{r fig.width=500}
+```{r}
 
 data_vs <- d[["VisitsSummary"]][["get"]]
 data_vs <- data_vs[order(data_vs$date),]
@@ -122,7 +122,7 @@ vf_1 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position
   ggtitle("visits from visitors (Returning vs New)") +
   scale_fill_discrete(name = "visitors") +
   labs(x="",y="") +
-  scale_fill_brewer(palette="Spectral")
+  scale_fill_brewer(palette="Purples")
   
 
 toSVG <- list(xmlSVG({show(vf_1)},standalone=T))

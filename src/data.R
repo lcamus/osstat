@@ -216,6 +216,19 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         close(ou)
         return(res)
         })
+
+      #error catch:      
+      for (i in 1:length(l)) {
+        hash <- ""
+        if (nchar(l[i])<10) {
+          hash <- digest(l,algo="md5")
+          print(hash)
+        }
+        if (hash %in% c("95674154942e7730d6b5b6eb4486f376","2a494202c5aee6de0201b929e15b3b65")) { # no data
+          print("no data")
+          l[i] <- NULL
+        }
+      }
       df <- sapply(l,function(x) separateFields(x))
       df <- sapply(df,function(x) removeNullFields(x))
     }
