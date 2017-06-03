@@ -113,7 +113,7 @@ getNewvsRet <- function(vr, vs) {
   d_ret <- d_ret[,c("date","type","val")]
   
   d_new <- d_ret
-  d_new$val <- 1-d_new$val
+  d_new$val <- abs(1-d_new$val)
   d_new$type <- "New"
   d_new <- d_new[,c("date","type","val")]
   
@@ -158,11 +158,22 @@ vf_4 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position
   labs(x="",y="") +
   scale_fill_brewer(palette="BrBG")
 
+#5
+data_vs$bounce_rate <- as.numeric(gsub("%","",as.character(data_vs$bounce_rate)))
+d_m <- getNewvsRet("bounce_rate_returning","bounce_rate")
+
+vf_5 <- ggplot(d_m, aes(x=date,y=val,group=type,fill=type)) + geom_area(position="fill") +
+  ggtitle("bounce rate (from Returning vs New visitors)") +
+  scale_fill_discrete(name = "bounce rate") +
+  labs(x="",y="") +
+  scale_fill_brewer(palette="Set2")
+
 toSVG <- list(
   xmlSVG({show(vf_1)},standalone=T),
   xmlSVG({show(vf_2)},standalone=T),
   xmlSVG({show(vf_3)},standalone=T),
-  xmlSVG({show(vf_4)},standalone=T)
+  xmlSVG({show(vf_4)},standalone=T),
+  xmlSVG({show(vf_5)},standalone=T)
 )
 
 s.in=sapply(toSVG,function(sv){paste0("data:image/svg+xml;utf8,",as.character(sv))})
@@ -170,3 +181,5 @@ slickR(s.in,slideId = 'vf',slickOpts = list(dots=T), height = 500,width = '100%'
 
 
 ```
+
+[http://news.google.fr]

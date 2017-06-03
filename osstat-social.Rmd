@@ -1,0 +1,220 @@
+---
+title: "osstat"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+# suppressMessages({
+#   library(scatterD3)
+#   library(ggplot2)
+# })
+# library(plotly)
+# library(countrycode)
+# library(formattable)
+library(slickR)
+library(svglite)
+library(dplyr)
+library(DT)
+load("data/d.RData")
+load("data/refCountry.RData")
+```
+
+Countries
+===================================== 
+
+Visits summary
+===================================== 
+
+Visit frequency
+===================================== 
+
+Social
+===================================== 
+
+Row
+-----------------------------------------------------------------------
+
+### Days
+
+```{r}
+data <- d[["Live"]][["getLastVisitsDetails:Visits"]]
+data <- data[order(data$date),]
+begin <- min(data$date)
+value <- as.Date(max(data$date))-as.Date(begin)
+valueBox(value, caption=paste0("Days (from ",begin,")"), icon = "fa-calendar")
+```
+
+### Social part of total visits
+
+```{r}
+v_total <- nrow(data)
+twitter <- data[grep("twitter|co$",data$referrerName, ignore.case=T),]
+linkedin <- data[grep("linkedin",data$referrerName, ignore.case=T),]
+facebook <- data[grep("facebook",data$referrerName, ignore.case=T),]
+value <- round(100*(nrow(twitter)+nrow(linkedin)+nrow(facebook))/nrow(data))
+valueBox(paste0(value," %"), icon = "glyphicon-share-alt", color="primary")
+```
+
+### Provider of visits 
+
+```{r}
+#summary(t$referrerName)
+value <- "5 th"
+valueBox(value, icon = "fa-star", color="primary")
+```
+
+
+### Visits from Twitter
+
+```{r}
+value <- nrow(twitter)
+valueBox(value, icon = "fa-twitter", color="info")
+```
+
+### Visits from Linked.in
+
+```{r}
+value <- nrow(linkedin)
+valueBox(value, icon = "fa-linkedin-square", color="primary")
+```
+
+### Visits from Facebook
+
+```{r}
+value <- nrow(facebook)
+valueBox(value, icon = "fa-facebook-square", color="primary")
+```
+
+Row {.tabset}
+-----------------------------------------------------------------------
+
+### >
+
+```{r}
+```   
+
+### Traffic from Twitter >
+
+```{r}
+t_nb_visits <- nrow(twitter)
+t_nb_ref <- length(unique(twitter$referrerUrl))
+t_df <- head(as.data.frame(summary(twitter$referrerUrl)),t_nb_ref)
+t_df$referrer <- rownames(t_df)
+t_df <- setNames(t_df,c("nb visits","referrer"))
+rownames(t_df) <- NULL
+
+#https://twitter.com/ecb/status/860042569505361920/photo/1
+
+d1 <- datatable(t_df,
+                rownames=F,
+                options=list(columnDefs=list(list(className='dt-center',targets=c(0,1))))) %>%
+  DT::formatStyle(c("nb visits"),fontWeight="bold")
+
+d1
+         
+```
+
+### Tweet rank #1 >
+    
+<img src='img/tweet_1.png'/>
+
+### Tweet rank #1 ~ Visits >
+
+```{r}
+t_df_1 <- twitter[twitter$referrerUrl=="https://t.co/kyg0UrZaAS",]
+d2 <- datatable(t_df_1,
+                rownames=F, filter="top")
+# ,
+#                 options=list(columnDefs=list(list(className='dt-center',targets=c(0,1))))) %>%
+#   DT::formatStyle(c("nb visits"),fontWeight="bold")
+
+d2
+
+```
+
+### Tweet rank #1 ~ Cumulated contribution >
+
+```{r}
+
+data_r <- data[data$date>=min(t_df_1$date),]
+
+t_cum_1 <- setNames(
+  data.frame(
+    "cumulated contribution",
+    sum(as.numeric(as.character(t_df_1$actions))),
+    sum(as.numeric(as.character(t_df_1$visitDuration)))
+  ),c("","number of actions","visits duration"))
+
+t_cum_1 <- rbind(t_cum_1,
+                 setNames(
+                 data.frame(
+                   "part of the total traffic on website",
+                   100*t_cum_1[1,2]/sum(as.numeric(as.character(data_r$actions))),
+                   100*t_cum_1[1,3]/sum(as.numeric(as.character(data_r$visitDuration)))
+                 ),c("","number of actions","visits duration"))
+)
+
+t_cum_1[,2] <- as.character(t_cum_1[,2])
+t_cum_1[2,2] <- paste0(as.character(round(as.numeric(t_cum_1[2,2])))," %")
+
+t_cum_1[,3] <- as.character(t_cum_1[,3])
+t_cum_1[1,3] <- paste0(as.character(round(as.numeric(t_cum_1[1,3])/3600))," h")
+t_cum_1[2,3] <- paste0(as.character(round(as.numeric(t_cum_1[2,3])))," %")
+
+
+d3 <- datatable(t_cum_1,
+                rownames=F, options=list(columnDefs=list(list(className='dt-center',targets=c(1,2)))))
+
+d3
+
+```
+
+### Tweet #last rank >
+    
+<img src='img/tweet_2.png'/>
+
+### Tweet #last rank ~ Actions
+
+```{r}
+
+t_df_2 <- twitter[twitter$referrerUrl==t_df[nrow(t_df),]$referrer,]
+data_a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
+
+data_a_r <- data_a[data_a$idVisit==t_df_2$idVisit,]
+data_a_r <- data_a_r[order(as.numeric(as.character(data_a_r$step))),]
+data_a_r <- data_a_r[!data_a_r$field %in% c("pageIdAction","pageId","generationTime","icon","timestamp","timeSpent"),c("step","field","value")]
+
+data_v_r <- t_df_2[,c("date","serverTimePretty","visitorType","daysSinceFirstVisit","visitIp","visitCount","referrerName","country","latitude","longitude","language","browser","operatingSystem","plugins","resolution")]
+
+data_m <- as.data.frame(t(data_v_r))
+data_m <- cbind(rownames(data_m),data_m)
+data_m <- setNames(data_m,c("field","value"))
+data_m <- rbind(data_m,setNames(data.frame("action 0","---"),c("field","value")))
+
+for (i in unique(data_a_r$step)) {
+  data_m <- rbind(data_m, data_a_r[data_a_r$step==i,c("field","value")])
+  data_m <- rbind(data_m,setNames(data.frame(paste0("action ",as.numeric(i)+1),"---"),c("field","value")))
+}
+
+data_m <- rbind(data_m,setNames(data.frame("end","---"),c("field","value")))
+data_m <- rbind(data_m,setNames(data.frame("visitDurationPretty",t_df_2$visitDurationPretty),c("field","value")))
+data_m <- rbind(data_m,setNames(data.frame("actions",t_df_2$actions),c("field","value")))
+
+#data_m[data_m$field=="url",] <- gsub("https://www.euro-area-statistics.org/","",data_m[data_m$field=="url",]$field)
+
+rownames(data_m) <- NULL
+
+d4 <- datatable(data_m,
+                rownames=F, options=list(columnDefs=list(list(className='dt-center',targets=c(0,1))))) %>%
+  DT::formatStyle(c("value"),fontWeight="bold")
+
+d4
+
+```
+
+Campaign efficiency
+=====================================
+

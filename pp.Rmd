@@ -1,0 +1,45 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+#load("data/d.RData")
+
+# library
+library(ggplot2)
+ 
+# The mtcars dataset is proposed in R
+data=d[["UserLanguage"]][["getLanguage"]]
+
+t<-data[,c("label","nb_visits","nb_actions")]
+t$nb_visits<-as.numeric(as.character(t$nb_visits))
+t$nb_actions<-as.numeric(as.character(t$nb_actions))
+t<-aggregate(cbind(nb_visits, nb_actions)~label, data=t, mean, na.rm=TRUE)
+
+ 
+# 1/ add text with geom_text, use nudge to nudge the text
+ggplot(t, aes(x=nb_visits, y=nb_actions)) +
+  geom_point() 
+# + 
+#   geom_text(label=~label, nudge_x = 0.25, nudge_y = 0.25, check_overlap = T)
+
+ 
+# # 2/ to improve readability, use geom_label
+# ggplot(data, aes(x=wt, y=mpg)) +
+#   geom_point() + 
+#   geom_label(label=label, nudge_x = 0.25, nudge_y = 0.2)
+#  
+# # 3/ custom geom_label like any other geom.
+# ggplot(data, aes(x=wt, y=mpg, fill=cyl)) +
+#   geom_label(label=label, color="white", size=5)
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).

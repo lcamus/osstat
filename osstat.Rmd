@@ -5,7 +5,7 @@ output:
     orientation: rows
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=T}
 library(flexdashboard)
 suppressMessages(library(scatterD3))
 library(plotly)
@@ -14,7 +14,6 @@ library(formattable)
 library(slickR)
 library(svglite)
 library(dplyr)
-library(growthrates)
 load("data/d.RData")
 load("data/refCountry.RData")
 ```
@@ -342,3 +341,12 @@ slickR(c(paste0(readLines('vs_1.html'),collapse='\n'),
 Visit frequency
 ===================================== 
 
+[osstat-visitfreq.html#visit-frequency]
+
+Social
+===================================== 
+
+[osstat-social.html#social]
+
+Campaign efficiency
+=====================================
