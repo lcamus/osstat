@@ -1,0 +1,43 @@
+---
+title: "Our statistics - STC report"
+output: html_notebook
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(highcharter)
+v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
+
+visitorType <- setNames(as.data.frame(table(v$visitorType)),c("visitorType","number"))
+
+highchart() %>%
+  hc_chart(type="pie") %>%
+  hc_title(text="New visitors vs Returning visitors") %>%
+  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+  hc_series(
+    list(
+      data = list(
+        list(
+          name=as.character(visitorType$visitorType[1]),
+          y=visitorType$number[1],
+          sliced=T, selected=T),
+        list(
+          name=as.character(visitorType$visitorType[2]),
+          y=visitorType$number[2])   
+      )
+    )
+  ) %>%
+  hc_tooltip(
+    headerFormat="",
+    pointFormat="{point.y}") %>%
+  hc_add_theme(hc_theme_538())
+
+
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
