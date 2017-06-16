@@ -6,7 +6,7 @@ output:
 
 
 ```{r setup, include=TRUE, echo=FALSE}
-library(highcharter)
+suppressMessages(library(highcharter))
 load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
@@ -39,6 +39,8 @@ highchart() %>%
 rm(visitorType)
 
 ```
+
+<p/>
 
 ```{r echo=FALSE}
 freqdis <- function() {
@@ -95,6 +97,7 @@ freqdis()
 
 ```
 
+<p/>
 
 ```{r echo=FALSE}
 
