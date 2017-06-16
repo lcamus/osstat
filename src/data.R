@@ -44,26 +44,36 @@ getGID <- function(module,method) {
   
 }
 
-collectData <- function(from, to, filter_limit, updatemode, appendmode, visits) {
+collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, visitsonly) {
   
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(visits)) visits <- F
   if (missing(updatemode)) updatemode <- F
   if (missing(appendmode)) appendmode <- F
+  if (missing(visitsonly)) visitsonly <- F
   
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
-  for (module in names(d)) {
+  if (visitsonly & visits)
+    scope <- "Live"
+  else
+    scope <- names(d)
+  
+  #for (module in names(d)) {
+  for (module in scope) {
     if (!visits)
       methods <- sapply(names(d[[module]]),function(x) gsub("^.*:.*$","",x))
     else
       methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)})) 
     for (method in methods)
-      for (day in days)
-        getData(date=as.Date(day,origin="1970-01-01"),
+      for (day in days) {
+        day <- as.character(as.Date(day,origin="1970-01-01"))
+        print(day)
+        getData(date=day,
                 object=module, method=method,
                 filter_limit=filter_limit,
                 updatemode=updatemode, appendmode=appendmode) 
+      }
   }
   
   save(d, file=fdata)
@@ -318,6 +328,6 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   
 }
 
-#getData("2017-05-01","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
+#getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
 
 

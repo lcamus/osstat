@@ -38,6 +38,45 @@ highchart() %>%
 
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+freqdis <- function() {
+  
+  v$visitDuration <- as.numeric(as.character(v$visitDuration))
+  
+  duration <- v[v$visitDuration<3600,]$visitDuration/60
+  breaks <- seq(0,max(duration),by=1)
+  duration.cut = cut(duration, breaks, right=FALSE) 
+  duration.freq = table(duration.cut)
+  
+  duration.cumfreq <- cumsum(duration.freq)
+  duration.cumfreq = cbind(duration.cumfreq/tail(duration.cumfreq,1))
+  
+  highchart() %>%
+    hc_title(text="Cumulated frequency of Visits duration") %>%
+    hc_subtitle(text="based on visits for 6 months") %>%
+    hc_chart(type="line") %>%
+    hc_yAxis(
+      title = list(text = "percent")) %>%
+    hc_xAxis(
+      categories = rownames(duration.cumfreq),
+      title = list(text = "minutes")) %>%
+    hc_series(
+      list(
+        name = "visits duration",
+        data = setNames(duration.cumfreq[,1]*100,NULL)
+      )
+    ) %>%
+    hc_tooltip(
+      headerFormat="<b>{point.key}</b> minutes (visits duration)<br>",
+      pointFormat="up to <b>{point.y:.0f}</b> % of total visits") %>%
+    hc_add_theme(hc_theme_538())
+  
+}
+
+freqdis()
+
+```
+
+Add a new chunk by cIlicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 
 When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
