@@ -43,7 +43,8 @@ freqdis <- function() {
   
   v$visitDuration <- as.numeric(as.character(v$visitDuration))
   
-  duration <- v[v$visitDuration<3600,]$visitDuration/60
+  #duration <- v[v$visitDuration<2400,]$visitDuration/60
+  duration <- v[v$visitDuration<20000,]$visitDuration/60
   breaks <- seq(0,max(duration),by=1)
   duration.cut = cut(duration, breaks, right=FALSE) 
   duration.freq = table(duration.cut)
@@ -58,7 +59,7 @@ freqdis <- function() {
     hc_yAxis(
       title = list(text = "percent")) %>%
     hc_xAxis(
-      categories = rownames(duration.cumfreq),
+      categories = head(rownames(duration.cumfreq),5),
       title = list(text = "minutes")) %>%
     hc_series(
       list(
@@ -67,9 +68,16 @@ freqdis <- function() {
       )
     ) %>%
     hc_tooltip(
-      headerFormat="<b>{point.key}</b> minutes (visits duration)<br>",
+      headerFormat="visits duration in <b>{point.key}</b> minutes<br>",
       pointFormat="up to <b>{point.y:.0f}</b> % of total visits") %>%
-    hc_add_theme(hc_theme_538())
+    hc_add_theme(hc_theme_538()) %>%
+    hc_annotations(
+      list(
+        xValue=30,
+        yValue=80,
+        title= list(text="90 % of visits duration<br>are below 5 min")
+      )
+    )
   
 }
 
