@@ -35,6 +35,7 @@ highchart() %>%
     pointFormat="{point.y}") %>%
   hc_add_theme(hc_theme_538())
 
+rm(visitorType)
 
 ```
 
@@ -44,7 +45,7 @@ freqdis <- function() {
   v$visitDuration <- as.numeric(as.character(v$visitDuration))
   
   #duration <- v[v$visitDuration<2400,]$visitDuration/60
-  duration <- v[v$visitDuration<20000,]$visitDuration/60
+  duration <- v$visitDuration/60
   breaks <- seq(0,max(duration),by=1)
   duration.cut = cut(duration, breaks, right=FALSE) 
   duration.freq = table(duration.cut)
@@ -59,12 +60,20 @@ freqdis <- function() {
     hc_yAxis(
       title = list(text = "percent")) %>%
     hc_xAxis(
-      categories = head(rownames(duration.cumfreq),5),
-      title = list(text = "minutes")) %>%
+      categories = head(rownames(duration.cumfreq),60),
+      title = list(text = "minutes"),
+      plotBands=list(
+        list(
+          color="#FCFFC5",
+          from=0,
+          to=4
+        )
+      )
+      ) %>%
     hc_series(
       list(
         name = "visits duration",
-        data = setNames(duration.cumfreq[,1]*100,NULL)
+        data = setNames(head(duration.cumfreq[,1],60)*100,NULL)
       )
     ) %>%
     hc_tooltip(
@@ -73,8 +82,8 @@ freqdis <- function() {
     hc_add_theme(hc_theme_538()) %>%
     hc_annotations(
       list(
-        xValue=30,
-        yValue=80,
+        xValue=8,
+        yValue=88,
         title= list(text="90 % of visits duration<br>are below 5 min")
       )
     )
@@ -82,6 +91,63 @@ freqdis <- function() {
 }
 
 freqdis()
+
+```
+
+
+```{r}
+
+referrerTypeName <- setNames(
+  head(
+    as.data.frame(
+      sort(
+        table(as.character(v$referrerTypeName)),
+        decreasing=T)
+    ),
+    3),
+  c("referrerTypeName","number")
+)
+referrerTypeName$referrerTypeName <- as.character(referrerTypeName$referrerTypeName)
+referrerTypeName$referrerTypeName[1] <- paste0(
+  as.character(referrerTypeName$referrerTypeName[1])," & social networks")
+
+highchart() %>%
+  hc_chart(type="pie") %>%
+  hc_title(text="Visitors entry mode") %>%
+  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+  hc_plotOptions(
+    pie = list(
+      dataLabels = list(
+        enabled = TRUE,
+        format="<b>{point.name}</b><br>{point.percentage:.0f} %"
+      ),
+      enableMouseTracking = T,
+      distance=-30)
+  ) %>%
+  hc_series(
+    list(
+      data = list(
+        list(
+          name=paste0(
+            as.character(referrerTypeName$referrerTypeName[1])
+            ),
+          y=referrerTypeName$number[1],
+          sliced=F, selected=F),
+        list(
+          name=as.character(referrerTypeName$referrerTypeName[2]),
+          y=referrerTypeName$number[2],
+          sliced=F, selected=F),
+        list(
+          name=as.character(referrerTypeName$referrerTypeName[3]),
+          y=referrerTypeName$number[3],
+          sliced=T, selected=T) 
+      )
+    )
+  ) %>%
+  hc_tooltip(
+    headerFormat="",
+    pointFormat="{point.y}") %>%
+  hc_add_theme(hc_theme_538())
 
 ```
 
