@@ -7,6 +7,7 @@ output:
 
 ```{r setup, include=TRUE, echo=FALSE}
 suppressMessages(library(highcharter))
+library(ISOcodes)
 load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
@@ -47,7 +48,6 @@ freqdis <- function() {
   
   v$visitDuration <- as.numeric(as.character(v$visitDuration))
   
-  #duration <- v[v$visitDuration<2400,]$visitDuration/60
   duration <- v$visitDuration/60
   breaks <- seq(0,max(duration),by=1)
   duration.cut = cut(duration, breaks, right=FALSE) 
@@ -153,3 +153,22 @@ highchart() %>%
 
 ```
 
+<p/>
+
+```{r echo=FALSE}
+
+lc <- as.data.frame(t(table(v$languageCode)),stringAsFactors=F)
+lc$Var2 <- as.character(lc$Var2)
+lc$Var1 <- sapply(strsplit(lc$Var2,"-"),"[",1)
+lc <- count(lc,Var1,wt=Freq)
+
+data("ISO_639_2")
+lc <- merge(lc,ISO_639_2[,c("Alpha_2","Name")],by.x=c("Var1"),by.y=c("Alpha_2"))
+lc <- lc[order(-lc$n),]
+lc <-lc[!is.na(lc$Var1),]
+lc$Name <- gsub("(,|;).+","",lc$Name)
+
+
+```
+
+<p/>
