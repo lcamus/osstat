@@ -8,6 +8,7 @@ output:
 ```{r setup, include=TRUE, echo=FALSE}
 suppressMessages(library(highcharter))
 library(ISOcodes)
+suppressWarnings(library(dplyr))
 load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
@@ -35,7 +36,7 @@ highchart() %>%
   hc_tooltip(
     headerFormat="",
     pointFormat="{point.y}") %>%
-  hc_add_theme(hc_theme_538())
+  hc_add_theme(hc_theme_elementary())
 
 rm(visitorType)
 
@@ -82,7 +83,7 @@ freqdis <- function() {
     hc_tooltip(
       headerFormat="visits duration in <b>{point.key}</b> minutes<br>",
       pointFormat="up to <b>{point.y:.0f}</b> % of total visits") %>%
-    hc_add_theme(hc_theme_538()) %>%
+    hc_add_theme(hc_theme_elementary()) %>%
     hc_annotations(
       list(
         xValue=8,
@@ -149,7 +150,7 @@ highchart() %>%
   hc_tooltip(
     headerFormat="",
     pointFormat="{point.y}") %>%
-  hc_add_theme(hc_theme_538())
+  hc_add_theme(hc_theme_elementary())
 
 ```
 
@@ -167,6 +168,32 @@ lc <- merge(lc,ISO_639_2[,c("Alpha_2","Name")],by.x=c("Var1"),by.y=c("Alpha_2"))
 lc <- lc[order(-lc$n),]
 lc <-lc[!is.na(lc$Var1),]
 lc$Name <- gsub("(,|;).+","",lc$Name)
+
+cs <- cumsum(lc$n/sum(lc$n))<0.96
+
+highchart() %>% 
+  hc_title(text = "Visitors languages") %>% 
+  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+  hc_plotOptions(
+    pie = list(
+      colorByPoint = TRUE, center = c('30%', '30%'),
+      size = 120, dataLabels = list(enabled = T)
+    )) %>%
+  hc_xAxis(categories = lc[cs,]$Name) %>% 
+  hc_add_series(data = lc[cs,]$n, type="column", name = "top 20 visitors languages") %>%
+  hc_add_series(
+    data=setNames(
+      data.frame(
+        c(paste0("top ",nrow(lc[cs,])," languages"),
+          paste0("others languages (",nrow(lc[!cs,]),")")),
+        c(sum(lc[cs,]$n),sum(lc[!cs,]$n))
+        ),
+      c("category","value")
+    ),
+    type="pie",
+    hcaes(name = category, y = value),
+    name="number of visits") %>%
+  hc_add_theme(hc_theme_elementary())
 
 
 ```
