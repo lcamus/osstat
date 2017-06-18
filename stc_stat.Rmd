@@ -6,9 +6,10 @@ output:
 
 
 ```{r setup, include=TRUE, echo=FALSE}
-suppressMessages(library(highcharter))
+suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
-suppressWarnings(library(dplyr))
+suppressMessages(suppressWarnings(library(dplyr)))
+#library(dplyr)
 load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
@@ -29,7 +30,7 @@ highchart() %>%
           sliced=T, selected=T),
         list(
           name=as.character(visitorType$visitorType[2]),
-          y=visitorType$number[2])   
+          y=visitorType$number[2])
       )
     )
   ) %>%
@@ -42,21 +43,21 @@ rm(visitorType)
 
 ```
 
-<p/>
+<p/><hr>
 
 ```{r echo=FALSE}
 freqdis <- function() {
-  
+
   v$visitDuration <- as.numeric(as.character(v$visitDuration))
-  
+
   duration <- v$visitDuration/60
   breaks <- seq(0,max(duration),by=1)
-  duration.cut = cut(duration, breaks, right=FALSE) 
+  duration.cut = cut(duration, breaks, right=FALSE)
   duration.freq = table(duration.cut)
-  
+
   duration.cumfreq <- cumsum(duration.freq)
   duration.cumfreq = cbind(duration.cumfreq/tail(duration.cumfreq,1))
-  
+
   highchart() %>%
     hc_title(text="Cumulated frequency of Visits duration") %>%
     hc_subtitle(text="based on visits for 6 months") %>%
@@ -91,14 +92,14 @@ freqdis <- function() {
         title= list(text="90 % of visits duration<br>are below 5 min")
       )
     )
-  
+
 }
 
 freqdis()
 
 ```
 
-<p/>
+<p/><hr>
 
 ```{r echo=FALSE}
 
@@ -143,7 +144,7 @@ highchart() %>%
         list(
           name=as.character(referrerTypeName$referrerTypeName[3]),
           y=referrerTypeName$number[3],
-          sliced=T, selected=T) 
+          sliced=T, selected=T)
       )
     )
   ) %>%
@@ -154,32 +155,45 @@ highchart() %>%
 
 ```
 
-<p/>
+<p/><hr>
+
+
+
 
 ```{r echo=FALSE}
 
-lc <- as.data.frame(t(table(v$languageCode)),stringAsFactors=F)
+lc <- as.data.frame(
+  t(
+    table(v[v$languageCode!="",]$languageCode)
+  ),
+  stringAsFactors=F)
+lc <- lc[lc$Freq!=0,]
 lc$Var2 <- as.character(lc$Var2)
 lc$Var1 <- sapply(strsplit(lc$Var2,"-"),"[",1)
-lc <- count(lc,Var1,wt=Freq)
+lc <- setNames(aggregate(Freq~Var1,lc,sum),c("Var1","n"))
 
 data("ISO_639_2")
 lc <- merge(lc,ISO_639_2[,c("Alpha_2","Name")],by.x=c("Var1"),by.y=c("Alpha_2"))
 lc <- lc[order(-lc$n),]
-lc <-lc[!is.na(lc$Var1),]
 lc$Name <- gsub("(,|;).+","",lc$Name)
 
 cs <- cumsum(lc$n/sum(lc$n))<0.96
 
-highchart() %>% 
-  hc_title(text = "Visitors languages") %>% 
+suppressWarnings(
+highchart() %>%
+  hc_title(text = "Visitors languages") %>%
   hc_subtitle(text="in cumulated number of visits for 6 months") %>%
   hc_plotOptions(
     pie = list(
       colorByPoint = TRUE, center = c('30%', '30%'),
-      size = 120, dataLabels = list(enabled = T)
-    )) %>%
-  hc_xAxis(categories = lc[cs,]$Name) %>% 
+      size = 120,
+      dataLabels = list(
+        enabled = T,
+        format="<b>{point.name}</b><br>{point.percentage:.0f} %"
+      )
+    )
+  ) %>%
+  hc_xAxis(categories = lc[cs,]$Name) %>%
   hc_add_series(data = lc[cs,]$n, type="column", name = "top 20 visitors languages") %>%
   hc_add_series(
     data=setNames(
@@ -187,15 +201,20 @@ highchart() %>%
         c(paste0("top ",nrow(lc[cs,])," languages"),
           paste0("others languages (",nrow(lc[!cs,]),")")),
         c(sum(lc[cs,]$n),sum(lc[!cs,]$n))
-        ),
+      ),
       c("category","value")
     ),
     type="pie",
     hcaes(name = category, y = value),
     name="number of visits") %>%
   hc_add_theme(hc_theme_elementary())
+)
 
+rm(lc,cs)
 
 ```
 
-<p/>
+<p/><hr>
+
+
+
