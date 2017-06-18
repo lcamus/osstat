@@ -216,22 +216,56 @@ rm(lc,cs,ISO_639_2)
 
 ```{r echo=FALSE}
 
-#data("ISO_3166_1")
 #mapdata <- get_data_from_map(download_map_data("custom/world"))
 
 cc <- setNames(data.frame(t(table(v$countryCode)))[,c("Var2","Freq")],c("countryCode","nbVisits"))
 cc$countryCode <- as.character(cc$countryCode)
 
-hcmap(map = "custom/world", download_map_data=F, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits",
-      name="number of visits") %>%
-  hc_credits(enabled=F) %>%
-  hc_title(text = "Visitors country") %>%
-  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
-  hc_add_theme(hc_theme_elementary()) %>%
-  hc_mapNavigation(enabled = TRUE)
+c1 <- function() {
+  hcmap(map = "custom/world", download_map_data=T, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits",
+        name="number of visits") %>%
+    hc_credits(enabled=F) %>%
+    hc_title(text = "Visitors country") %>%
+    hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+    hc_add_theme(hc_theme_elementary()) %>%
+    hc_mapNavigation(enabled = TRUE)
+}
+
+cc10 <- head(cc[order(-cc$nbVisits),],10)
+data("ISO_3166_1")
+ISO_3166_1$Alpha_2 <- tolower(ISO_3166_1$Alpha_2)
+m <- merge(x=cc10, y=ISO_3166_1, by.x="countryCode", by.y="Alpha_2")
+cc10 <- m[order(-m$nbVisits),c("countryCode","Name","nbVisits")]
+
+c2 <- function() {
+  highchart() %>%
+    hc_title(text = "top 10") %>% 
+    hc_xAxis(categories = cc10$Name) %>%
+    hc_add_series(cc10, type="bar", name = "number of visits",
+                  hcaes(name = countryCode, y = nbVisits), showInLegend = T) %>%
+    hc_add_theme(hc_theme_elementary())
+}
 
 ```
 
+<table width="100%">
+<tr width="100%">
+<td width="50%">
+
+```{r echo=FALSE}
+c1()
+```
+
+</td>
+<td width="50%">
+
+```{r echo=FALSE}
+c2()
+```
+
+</td>
+</tr>
+</table>
 
 
 
