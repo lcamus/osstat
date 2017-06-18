@@ -46,6 +46,7 @@ rm(visitorType)
 <p/><hr>
 
 ```{r echo=FALSE}
+
 freqdis <- function() {
 
   v$visitDuration <- as.numeric(as.character(v$visitDuration))
@@ -155,7 +156,7 @@ highchart() %>%
 
 ```
 
-c
+<p/><hr>
 
 ```{r echo=FALSE}
 
@@ -213,7 +214,7 @@ rm(lc,cs,ISO_639_2)
 
 <p/><hr>
 
-```{r}
+```{r echo=FALSE}
 
 #data("ISO_3166_1")
 #mapdata <- get_data_from_map(download_map_data("custom/world"))
@@ -221,8 +222,13 @@ rm(lc,cs,ISO_639_2)
 cc <- setNames(data.frame(t(table(v$countryCode)))[,c("Var2","Freq")],c("countryCode","nbVisits"))
 cc$countryCode <- as.character(cc$countryCode)
 
-hcmap(map = "custom/world", download_map_data=F, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits") %>%
-  hc_credits(enabled=F)
+hcmap(map = "custom/world", download_map_data=F, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits",
+      name="number of visits") %>%
+  hc_credits(enabled=F) %>%
+  hc_title(text = "Visitors country") %>%
+  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+  hc_add_theme(hc_theme_elementary()) %>%
+  hc_mapNavigation(enabled = TRUE)
 
 ```
 
