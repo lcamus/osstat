@@ -215,11 +215,13 @@ rm(lc,cs,ISO_639_2)
 
 ```{r}
 
-data("ISO_3166_1")
+#data("ISO_3166_1")
+#mapdata <- get_data_from_map(download_map_data("custom/world"))
 
-cc <- as.character(v$countryCode)
+cc <- setNames(data.frame(t(table(v$countryCode)))[,c("Var2","Freq")],c("countryCode","nbVisits"))
+cc$countryCode <- as.character(cc$countryCode)
 
-hcmap(map = "custom/world", download_map_data=F) %>%
+hcmap(map = "custom/world", download_map_data=F, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits") %>%
   hc_credits(enabled=F)
 
 ```
