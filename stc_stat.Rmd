@@ -20,7 +20,7 @@ visitorType <- setNames(as.data.frame(table(v$visitorType)),c("visitorType","num
 highchart() %>%
   hc_chart(type="pie") %>%
   hc_title(text="New visitors vs Returning visitors") %>%
-  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+  hc_subtitle(text="in cumulated number of visits for 3 months") %>%
   hc_series(
     list(
       data = list(
@@ -61,7 +61,7 @@ freqdis <- function() {
 
   highchart() %>%
     hc_title(text="Cumulated frequency of Visits duration") %>%
-    hc_subtitle(text="based on visits for 6 months") %>%
+    hc_subtitle(text="based on visits for 3 months") %>%
     hc_chart(type="line") %>%
     hc_yAxis(
       title = list(text = "percent")) %>%
@@ -121,7 +121,7 @@ referrerTypeName$referrerTypeName[1] <- paste0(
 highchart() %>%
   hc_chart(type="pie") %>%
   hc_title(text="Visitors entry mode") %>%
-  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+  hc_subtitle(text="in cumulated number of visits for 3 months") %>%
   hc_plotOptions(
     pie = list(
       dataLabels = list(
@@ -180,7 +180,7 @@ cs <- cumsum(lc$n/sum(lc$n))<0.96
 suppressWarnings(
   highchart() %>%
     hc_title(text = "Visitors languages") %>%
-    hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+    hc_subtitle(text="in cumulated number of visits for 3 months") %>%
     hc_plotOptions(
       pie = list(
         colorByPoint = TRUE, center = c('30%', '30%'),
@@ -226,7 +226,7 @@ c1 <- function() {
         name="number of visits") %>%
     hc_credits(enabled=F) %>%
     hc_title(text = "Visitors country") %>%
-    hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+    hc_subtitle(text="in cumulated number of visits for 3 months") %>%
     hc_add_theme(hc_theme_elementary()) %>%
     hc_mapNavigation(enabled = TRUE)
 }
@@ -248,24 +248,82 @@ c2 <- function() {
 
 ```
 
-<table width="100%">
-<tr width="100%">
-<td width="50%">
+<table width="100%"><tr width="100%"><td width="50%">
 
 ```{r echo=FALSE}
 c1()
 ```
 
-</td>
-<td width="50%">
+</td><td width="50%">
 
 ```{r echo=FALSE}
 c2()
 ```
 
-</td>
-</tr>
-</table>
+</td></tr></table>
+<p/><hr>
+
+```{r echo=FALSE}
+
+vt <- d[["VisitTime"]][["getVisitInformationPerLocalTime"]]
+vt <- vt[vt$date>=min(v$date),]
+vt$nb_visits <- as.numeric(vt$nb_visits)
+vt$nb_actions <- as.numeric(vt$nb_actions)
+
+av <- aggregate(nb_visits~label,vt,sum)
+av$label <- as.numeric(sub("h","",as.character(av$label)))
+av <- av[order(av$label),]
+
+c_vh_v <- highchart() %>%
+  hc_title(text = "Visits hours") %>%
+  hc_subtitle(text="in cumulated number of visits for 3 months") %>%
+  hc_xAxis(categories = av$label) %>%
+  hc_chart(polar=T) %>%
+  hc_add_series(av, type="column", name = "number of visits",
+                hcaes(name = label, y = nb_visits), showInLegend = T) %>%
+  hc_add_theme(hc_theme_elementary())
+
+aa <- aggregate(nb_actions~label,vt,sum)
+aa$label <- as.numeric(sub("h","",as.character(aa$label)))
+aa <- aa[order(aa$label),]
+
+c_vh_a <- highchart() %>%
+  hc_title(text = "Visits hours") %>%
+  hc_subtitle(text="in cumulated number of actions for 3 months") %>%
+  hc_xAxis(categories = aa$label) %>%
+  hc_chart(polar=T) %>%
+  hc_add_series(aa, type="column", name = "number of actions",
+                hcaes(name = label, y = nb_actions), showInLegend = T) %>%
+  hc_add_theme(hc_theme_elementary())
+
+```
+<table width="100%"><tr width="100%"><td width="50%">
+
+```{r echo=FALSE}
+c_vh_v
+```
+
+</td><td width="50%">
+
+```{r echo=FALSE}
+c_vh_a
+```
+
+</td></tr></table>
+<p/><hr>
+
+```{r echo=FALSE}
+
+p <- d[["Actions"]][["getPageUrls"]]
+p <- p[p$date>="2017-03-01",]
+p$label <- as.character(p$label)
+
+# pat <- "(?<=^.*)\\?.*$"
+# m_v <- regmatches(p$label,regexpr(pat,p$label,perl=T))
+# m_i <- grepl(pat,p$label,perl=T)
 
 
+
+
+```
 
