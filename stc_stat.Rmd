@@ -155,10 +155,7 @@ highchart() %>%
 
 ```
 
-<p/><hr>
-
-
-
+c
 
 ```{r echo=FALSE}
 
@@ -180,41 +177,53 @@ lc$Name <- gsub("(,|;).+","",lc$Name)
 cs <- cumsum(lc$n/sum(lc$n))<0.96
 
 suppressWarnings(
-highchart() %>%
-  hc_title(text = "Visitors languages") %>%
-  hc_subtitle(text="in cumulated number of visits for 6 months") %>%
-  hc_plotOptions(
-    pie = list(
-      colorByPoint = TRUE, center = c('30%', '30%'),
-      size = 120,
-      dataLabels = list(
-        enabled = T,
-        format="<b>{point.name}</b><br>{point.percentage:.0f} %"
+  highchart() %>%
+    hc_title(text = "Visitors languages") %>%
+    hc_subtitle(text="in cumulated number of visits for 6 months") %>%
+    hc_plotOptions(
+      pie = list(
+        colorByPoint = TRUE, center = c('30%', '30%'),
+        size = 120,
+        dataLabels = list(
+          enabled = T,
+          format="<b>{point.name}</b><br>{point.percentage:.0f} %"
+        )
       )
-    )
-  ) %>%
-  hc_xAxis(categories = lc[cs,]$Name) %>%
-  hc_add_series(data = lc[cs,]$n, type="column", name = "top 20 visitors languages") %>%
-  hc_add_series(
-    data=setNames(
-      data.frame(
-        c(paste0("top ",nrow(lc[cs,])," languages"),
-          paste0("others languages (",nrow(lc[!cs,]),")")),
-        c(sum(lc[cs,]$n),sum(lc[!cs,]$n))
+    ) %>%
+    hc_xAxis(categories = lc[cs,]$Name) %>%
+    hc_add_series(data = lc[cs,]$n, type="column", name = "top 20 visitors languages") %>%
+    hc_add_series(
+      data=setNames(
+        data.frame(
+          c(paste0("top ",nrow(lc[cs,])," languages"),
+            paste0("others languages (",nrow(lc[!cs,]),")")),
+          c(sum(lc[cs,]$n),sum(lc[!cs,]$n))
+        ),
+        c("category","value")
       ),
-      c("category","value")
-    ),
-    type="pie",
-    hcaes(name = category, y = value),
-    name="number of visits") %>%
-  hc_add_theme(hc_theme_elementary())
+      type="pie",
+      hcaes(name = category, y = value),
+      name="number of visits") %>%
+    hc_add_theme(hc_theme_elementary())
 )
 
-rm(lc,cs)
+rm(lc,cs,ISO_639_2)
 
 ```
 
 <p/><hr>
+
+```{r}
+
+data("ISO_3166_1")
+
+cc <- as.character(v$countryCode)
+
+hcmap(map = "custom/world", download_map_data=F) %>%
+  hc_credits(enabled=F)
+
+```
+
 
 
 
