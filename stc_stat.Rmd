@@ -1,26 +1,79 @@
 ---
 title: "Our statistics - web traffic indicators"
 output:
-  html_document
+  html_document: default
 ---
 
-<p/>
+<p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
 
 ```{r setup, include=TRUE, echo=FALSE}
 suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
 suppressMessages(suppressWarnings(library(dplyr)))
-#library(dplyr)
-# library(treemap)
-# library("viridis")
 load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
+
+
+```{r echo=FALSE}
+
+c_dailyvisits <- function(df, lib) {
+  
+  l <- lowess(df$nb_visits)
+  l$x <- df$date
+  l<- setNames(as.data.frame(l),c("label","value"))
+  l$value <- round(l$value)
+  
+  highchart() %>%
+    hc_exporting(enabled=T) %>%
+    hc_title(text="Number of visits") %>%
+    hc_subtitle(text=lib) %>%
+    hc_xAxis(categories=data$date, 
+             title=list(text="")) %>%
+    hc_yAxis(title=list(text="number of visits (daily)")) %>%
+    hc_add_series(name="visits (unadjusted)", data=data$nb_visits) %>%
+    hc_add_series(name="visits (trend)", data=l$value) %>%
+    hc_add_theme(hc_theme_elementary())
+  
+}
+
+data <- d[["VisitsSummary"]][["get"]]
+data <- data[order(data$date),]
+data <- data[data$date>="2017-03-01" & data$date<="2017-05-31",]
+data$nb_visits <- as.numeric(data$nb_visits)
+
+c_dv_3m <- c_dailyvisits(data,"in daily visits for 3 months")
+
+data <- d[["VisitsSummary"]][["get"]]
+data <- data[order(data$date),]
+data <- data[data$date>="2016-01-01" & data$date<="2017-05-31",]
+data$nb_visits <- as.numeric(data$nb_visits)
+
+c_dv_18m <- c_dailyvisits(data,"in daily visits since January 2016")
+
+
+```
+
+<table width="100%"><tr width="100%"><td width="50%">
+
+```{r echo=FALSE}
+c_dv_3m
+```
+
+</td><td width="50%">
+
+```{r echo=FALSE}
+c_dv_18m
+```
+
+</td></tr></table>
+<p/><hr>
 
 ```{r echo=FALSE}
 visitorType <- setNames(as.data.frame(table(v$visitorType)),c("visitorType","number"))
 
 highchart() %>%
+  hc_exporting(enabled=T) %>%
   hc_chart(type="pie") %>%
   hc_title(text="New visitors vs Returning visitors") %>%
   hc_subtitle(text="in cumulated number of visits for 3 months") %>%
@@ -50,6 +103,83 @@ rm(visitorType)
 
 ```{r echo=FALSE}
 
+data <- data.frame(sort(table(v$deviceType),decreasing=T))
+data$Var1 <- as.character(data$Var1)
+data_1 <- setNames(
+  data.frame(c("Desktop","Mobile"),
+             c(sum(data[data$Var1=="Desktop",]$Freq),
+             sum(data[data$Var1!="Desktop",]$Freq))),
+  c("label","value")
+)
+
+suppressWarnings(
+  c_dev_1 <- highchart() %>%
+    hc_exporting(enabled=T) %>%
+    hc_chart(type="pie") %>%
+    hc_title(text="Visitors devices") %>%
+    hc_subtitle(text="in cumulated number of visits for 3 months") %>%
+    hc_series(
+      list(
+        data = list(
+          list(
+            name=as.character(data_1$label[1]),
+            y=data_1$value[1],
+            sliced=T, selected=T),
+          list(
+            name=as.character(data_1$label[2]),
+            y=data_1$value[2])
+        )
+      )
+    ) %>%
+    hc_tooltip(
+      headerFormat="",
+      pointFormat="{point.y}") %>%
+    hc_add_theme(hc_theme_elementary())
+)
+
+#next chart
+data_2 <- subset(data,data$Var1 %in% c("Smartphone","Tablet","Phablet"))
+data_2 <- rbind(data_2,
+                setNames(
+                  data.frame(
+                  c("Others"),
+                  sum(subset(data,!data$Var1 %in% c("Desktop","Smartphone","Tablet","Phablet"))$Freq)
+                ),
+                c("Var1","Freq")
+                )
+)
+
+suppressWarnings(
+  c_dev_2 <- highchart() %>%
+    hc_exporting(enabled=T) %>%
+    hc_title(text = "detail for mobiles") %>%
+    hc_subtitle(text="in cumulated number of visits for 3 months") %>%
+    hc_xAxis(categories = data_2$Var1) %>%
+    hc_add_series(data_2, type="bar", name = "number of visits",
+                  hcaes(name = Var1, y = Freq), showInLegend = T,
+                  color="#FA8832") %>%
+    hc_add_theme(hc_theme_elementary())
+)
+
+```
+
+<table width="100%"><tr width="100%"><td width="50%">
+
+```{r echo=FALSE}
+c_dev_1
+```
+
+</td><td width="50%">
+
+```{r echo=FALSE}
+c_dev_2
+```
+
+</td></tr></table>
+<p/><hr>
+
+```{r echo=FALSE}
+
 freqdis <- function() {
 
   v$visitDuration <- as.numeric(as.character(v$visitDuration))
@@ -63,6 +193,7 @@ freqdis <- function() {
   duration.cumfreq = cbind(duration.cumfreq/tail(duration.cumfreq,1))
 
   highchart() %>%
+    hc_exporting(enabled=T) %>%
     hc_title(text="Cumulated frequency of Visits duration") %>%
     hc_subtitle(text="based on visits for 3 months") %>%
     hc_chart(type="line") %>%
@@ -73,7 +204,7 @@ freqdis <- function() {
       title = list(text = "minutes"),
       plotBands=list(
         list(
-          color="#FCFFC5",
+          color="#FAD1A8",
           from=0,
           to=4
         )
@@ -138,45 +269,48 @@ referrerTypeName <- rbind(referrerTypeName,t)
 
 referrerTypeName$number <- as.numeric(referrerTypeName$number)
 
-c_entry_g <- highchart() %>%
-  hc_chart(type="pie") %>%
-  hc_title(text="Visitors entry mode") %>%
-  hc_subtitle(text="in cumulated number of visits for 3 months") %>%
-  hc_plotOptions(
-    pie = list(
-      dataLabels = list(
-        enabled = TRUE,
-        format="<b>{point.name}</b><br>{point.percentage:.0f} %"
-      ),
-      enableMouseTracking = T,
-      distance=-30)
-  ) %>%
-  hc_series(
-    list(
-      data = list(
-        list(
-          name=as.character(referrerTypeName$referrerTypeName[3]),
-          y=referrerTypeName$number[3],
-          sliced=F, selected=F),
-        list(
-          name=as.character(referrerTypeName$referrerTypeName[2]),
-          y=referrerTypeName$number[2],
-          sliced=F, selected=F),
-        list(
-          name=as.character(referrerTypeName$referrerTypeName[1]),
-          y=referrerTypeName$number[1],
-          sliced=F, selected=F),
-        list(
-          name=as.character(referrerTypeName$referrerTypeName[4]),
-          y=referrerTypeName$number[4],
-          sliced=T, selected=T)
+suppressWarnings(
+  c_entry_g <- highchart() %>%
+    hc_exporting(enabled=T) %>%
+    hc_chart(type="pie") %>%
+    hc_title(text="Visitors entry mode") %>%
+    hc_subtitle(text="in cumulated number of visits for 3 months") %>%
+    hc_plotOptions(
+      pie = list(
+        dataLabels = list(
+          enabled = TRUE,
+          format="<b>{point.name}</b><br>{point.percentage:.0f} %"
+        ),
+        enableMouseTracking = T,
+        distance=-30)
+    ) %>%
+    hc_series(
+      list(
+        data = list(
+          list(
+            name=as.character(referrerTypeName$referrerTypeName[3]),
+            y=referrerTypeName$number[3],
+            sliced=F, selected=F),
+          list(
+            name=as.character(referrerTypeName$referrerTypeName[2]),
+            y=referrerTypeName$number[2],
+            sliced=F, selected=F),
+          list(
+            name=as.character(referrerTypeName$referrerTypeName[1]),
+            y=referrerTypeName$number[1],
+            sliced=F, selected=F),
+          list(
+            name=as.character(referrerTypeName$referrerTypeName[4]),
+            y=referrerTypeName$number[4],
+            sliced=T, selected=T)
+        )
       )
-    )
-  ) %>%
-  hc_tooltip(
-    headerFormat="",
-    pointFormat="{point.y}") %>%
-  hc_add_theme(hc_theme_elementary())
+    ) %>%
+    hc_tooltip(
+      headerFormat="",
+      pointFormat="{point.y}") %>%
+    hc_add_theme(hc_theme_elementary())
+)
 
 #Social:
 
@@ -184,13 +318,17 @@ traffic_social <- setNames(data.frame(c("Twitter","Linked.in","Facebook"),
                                       c(nrow(twitter),nrow(linkedin),nrow(facebook))),
                            c("label","value"))
 
-c_entry_s <- highchart() %>%
+suppressWarnings(
+  c_entry_s <- highchart() %>%
+    hc_exporting(enabled=T) %>%
     hc_title(text = "Traffic from Social networks") %>%
     hc_subtitle(text="in cumulated number of visits for 3 months") %>%
     hc_xAxis(categories = traffic_social$label) %>%
     hc_add_series(traffic_social, type="bar", name = "number of visits",
-                  hcaes(name = label, y = value), showInLegend = T) %>%
+                  hcaes(name = label, y = value), showInLegend = T,
+                  color="#E46151") %>%
     hc_add_theme(hc_theme_elementary())
+)
 
 ```
 
@@ -230,6 +368,7 @@ cs <- cumsum(lc$n/sum(lc$n))<0.96
 
 suppressWarnings(
   highchart() %>%
+    hc_exporting(enabled=T) %>%
     hc_title(text = "Visitors languages") %>%
     hc_subtitle(text="in cumulated number of visits for 3 months") %>%
     hc_plotOptions(
@@ -275,6 +414,7 @@ cc$countryCode <- as.character(cc$countryCode)
 c1 <- function() {
   hcmap(map = "custom/world", download_map_data=T, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits",
         name="number of visits") %>%
+    hc_exporting(enabled=T) %>%
     hc_credits(enabled=F) %>%
     hc_title(text = "Visitors country") %>%
     hc_subtitle(text="in cumulated number of visits for 3 months") %>%
@@ -290,6 +430,7 @@ cc10 <- m[order(-m$nbVisits),c("countryCode","Name","nbVisits")]
 
 c2 <- function() {
   highchart() %>%
+    hc_exporting(enabled=T) %>%
     hc_title(text = "top 10") %>% 
     hc_xAxis(categories = cc10$Name) %>%
     hc_add_series(cc10, type="bar", name = "number of visits",
@@ -326,6 +467,7 @@ av$label <- as.numeric(sub("h","",as.character(av$label)))
 av <- av[order(av$label),]
 
 c_vh_v <- highchart() %>%
+  hc_exporting(enabled=T) %>%
   hc_title(text = "Visits hours") %>%
   hc_subtitle(text="in cumulated number of visits for 3 months") %>%
   hc_xAxis(categories = av$label) %>%
@@ -359,6 +501,7 @@ rownames(av_d) <- av_d$label
 av_d <- av_d[days,]
 
 c_av_d <- highchart() %>%
+  hc_exporting(enabled=T) %>%
   hc_title(text = "Visits days") %>%
   hc_subtitle(text="in cumulated number of visits for 3 months") %>%
   hc_xAxis(categories = av_d$label) %>%
@@ -386,53 +529,63 @@ c_av_d
 
 ```{r echo=FALSE}
 
-p <- d[["Actions"]][["getPageUrls"]]
-p <- p[p$date>="2017-03-01",]
-p$label <- as.character(p$label)
-p$cat1 <- sub("\\?.*$","",p$label) 
-p$cat1 <- sub("^/","",p$cat1)
-p$cat1 <- gsub("-"," ",p$cat1)
-p$nb_hits <- as.numeric(p$nb_hits)
+clean <- function(begin,end) {
+  
+  p <- d[["Actions"]][["getPageUrls"]]
+  p <- p[p$date>=begin & p$date<=end,]
+  p$label <- as.character(p$label)
+  p$cat1 <- sub("\\?.*$","",p$label) 
+  p$cat1 <- sub("^/","",p$cat1)
+  p$cat1 <- gsub("-"," ",p$cat1)
+  p$nb_hits <- as.numeric(p$nb_hits)
+  
+  pa <- aggregate(nb_hits~cat1,p,sum)
+  exclude <- c("index","classic","embed","Others","")
+  pa$sel <- 0
+  pa[!pa$cat1 %in% exclude,]$sel <- 1
+  pa[pa$nb_hits<pa[pa$cat1=="embed",]$nb_hits,]$sel <- 0
+  pa <- pa[order(-pa$nb_hits),]
+  
+  cat <- c("Bank interest rates","Banks balance sheet","Competitiveness indicators","External sector","Inflation rates","Investment funds","Macro economic indicators","Securities","Financing and investment dynamics")
+  cat <- tolower(cat)
+  
+  t<-sapply(cat,function(x) grep(x,pa$cat1))
+  
+  pa$cat <- ""
+  for (i in 1:length(t))
+    for (j in 1:length(t[[i]]))
+      pa[t[[i]][j],]$cat <- names(t)[i]
+  pa[pa$cat1=="macroeconomic scoreboard",]$cat <- "macro economic indicators"
+  pa[pa$cat1=="international investment position",]$cat <- "external sector"
+  pa[pa$cat1=="external debt",]$cat <- "external sector"
+  pa[pa$cat1=="financial account",]$cat <- "external sector"
+  pa[pa$cat1=="reserve assets",]$cat <- "external sector"
+  
+  pa$cat0 <- ""
+  pa[pa$sel==1,]$cat0  <-
+    sub("^ ","",
+        sapply(1:nrow(pa[pa$sel==1,]),function(x) sub(pa[pa$sel==1,][x,]$cat,"",pa[pa$sel==1,][x,]$cat1)))
+  
+  pa[pa$cat1=="macro economic indicators",]$cat0 <- "macro economic indicators"
+  pa[pa$cat1=="external sector",]$cat0 <- "current account"
+  
+  pa_sel <- pa[pa$sel==1,]
+  pa_sel_a <- aggregate(nb_hits~cat,pa_sel,sum)
+  
+  return(pa_sel_a)
+  
+}
 
-pa <- aggregate(nb_hits~cat1,p,sum)
-exclude <- c("index","classic","embed","Others","")
-pa$sel <- 0
-pa[!pa$cat1 %in% exclude,]$sel <- 1
-pa[pa$nb_hits<pa[pa$cat1=="embed",]$nb_hits,]$sel <- 0
-pa <- pa[order(-pa$nb_hits),]
-
-cat <- c("Bank interest rates","Banks balance sheet","Competitiveness indicators","External sector","Inflation rates","Investment funds","Macro economic indicators","Securities","Financing and investment dynamics")
-cat <- tolower(cat)
-
-t<-sapply(cat,function(x) grep(x,pa$cat1))
-
-pa$cat <- ""
-for (i in 1:length(t))
-  for (j in 1:length(t[[i]]))
-    pa[t[[i]][j],]$cat <- names(t)[i]
-pa[pa$cat1=="macroeconomic scoreboard",]$cat <- "macro economic indicators"
-pa[pa$cat1=="international investment position",]$cat <- "external sector"
-pa[pa$cat1=="external debt",]$cat <- "external sector"
-pa[pa$cat1=="financial account",]$cat <- "external sector"
-pa[pa$cat1=="reserve assets",]$cat <- "external sector"
-
-pa$cat0 <- ""
-pa[pa$sel==1,]$cat0  <-
-  sub("^ ","",
-      sapply(1:nrow(pa[pa$sel==1,]),function(x) sub(pa[pa$sel==1,][x,]$cat,"",pa[pa$sel==1,][x,]$cat1)))
-
-pa[pa$cat1=="macro economic indicators",]$cat0 <- "macro economic indicators"
-pa[pa$cat1=="external sector",]$cat0 <- "current account"
-
-pa_sel <- pa[pa$sel==1,]
-pa_sel_a <- aggregate(nb_hits~cat,pa_sel,sum)
+pa_sel_a <- clean(begin="2017-03-01", end="2017-03-01")
 
 highchart() %>%
+  hc_exporting(enabled=T) %>%
   hc_title(text = "actions by content") %>%
   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
   hc_add_series(pa_sel_a, type="treemap", name = "number of actions",
-                hcaes(x = cat, value = nb_hits, color=nb_hits), showInLegend = T) %>%
-  hc_add_theme(hc_theme_elementary())
+                hcaes(x = cat, value = nb_hits, color=order(nb_hits)), showInLegend = T, colorByPoint=T) 
+# %>%
+#   hc_add_theme(hc_theme_elementary())
 
 # tm <- treemap(pa_sel, index = c("cat", "cat0"),
 #               vSize = "nb_hits", vColor = "nb_hits",
@@ -446,11 +599,4 @@ highchart() %>%
 
 ```
 
-```{r}
-
-twitter <- v[grep("twitter|co$",v$referrerName, ignore.case=T),]
-linkedin <- v[grep("linkedin",v$referrerName, ignore.case=T),]
-facebook <- v[grep("facebook",v$referrerName, ignore.case=T),]
-
-```
 
