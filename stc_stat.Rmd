@@ -1,17 +1,18 @@
 ---
-title: "Our statistics - STC report"
+title: "Our statistics - web traffic indicators"
 output:
   html_document
 ---
 
+<p/>
 
 ```{r setup, include=TRUE, echo=FALSE}
 suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
 suppressMessages(suppressWarnings(library(dplyr)))
 #library(dplyr)
-library(treemap)
-library("viridis")
+# library(treemap)
+# library("viridis")
 load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
@@ -120,7 +121,24 @@ referrerTypeName$referrerTypeName <- as.character(referrerTypeName$referrerTypeN
 referrerTypeName$referrerTypeName[1] <- paste0(
   as.character(referrerTypeName$referrerTypeName[1])," & social networks")
 
-highchart() %>%
+twitter <- v[grep("twitter|co$",v$referrerName, ignore.case=T),]
+linkedin <- v[grep("linkedin",v$referrerName, ignore.case=T),]
+facebook <- v[grep("facebook",v$referrerName, ignore.case=T),]
+
+social <- nrow(twitter)+nrow(linkedin)+nrow(facebook)
+
+t <- referrerTypeName[referrerTypeName$referrerTypeName=="Websites & social networks",]
+t$number <- as.character(as.numeric(t$number)-social)
+t$referrerTypeName <- "Websites"
+
+t <- rbind(t,c("Social networks",as.character(social)))
+
+referrerTypeName <- referrerTypeName[referrerTypeName$referrerTypeName!="Websites & social networks",]
+referrerTypeName <- rbind(referrerTypeName,t)
+
+referrerTypeName$number <- as.numeric(referrerTypeName$number)
+
+c_entry_g <- highchart() %>%
   hc_chart(type="pie") %>%
   hc_title(text="Visitors entry mode") %>%
   hc_subtitle(text="in cumulated number of visits for 3 months") %>%
@@ -137,16 +155,20 @@ highchart() %>%
     list(
       data = list(
         list(
-          name=as.character(referrerTypeName$referrerTypeName[1]),
-          y=referrerTypeName$number[1],
+          name=as.character(referrerTypeName$referrerTypeName[3]),
+          y=referrerTypeName$number[3],
           sliced=F, selected=F),
         list(
           name=as.character(referrerTypeName$referrerTypeName[2]),
           y=referrerTypeName$number[2],
           sliced=F, selected=F),
         list(
-          name=as.character(referrerTypeName$referrerTypeName[3]),
-          y=referrerTypeName$number[3],
+          name=as.character(referrerTypeName$referrerTypeName[1]),
+          y=referrerTypeName$number[1],
+          sliced=F, selected=F),
+        list(
+          name=as.character(referrerTypeName$referrerTypeName[4]),
+          y=referrerTypeName$number[4],
           sliced=T, selected=T)
       )
     )
@@ -156,8 +178,35 @@ highchart() %>%
     pointFormat="{point.y}") %>%
   hc_add_theme(hc_theme_elementary())
 
+#Social:
+
+traffic_social <- setNames(data.frame(c("Twitter","Linked.in","Facebook"),
+                                      c(nrow(twitter),nrow(linkedin),nrow(facebook))),
+                           c("label","value"))
+
+c_entry_s <- highchart() %>%
+    hc_title(text = "Traffic from Social networks") %>%
+    hc_subtitle(text="in cumulated number of visits for 3 months") %>%
+    hc_xAxis(categories = traffic_social$label) %>%
+    hc_add_series(traffic_social, type="bar", name = "number of visits",
+                  hcaes(name = label, y = value), showInLegend = T) %>%
+    hc_add_theme(hc_theme_elementary())
+
 ```
 
+<table width="100%"><tr width="100%"><td width="50%">
+
+```{r echo=FALSE}
+c_entry_g
+```
+
+</td><td width="50%">
+
+```{r echo=FALSE}
+c_entry_s
+```
+
+</td></tr></table>
 <p/><hr>
 
 ```{r echo=FALSE}
@@ -285,17 +334,37 @@ c_vh_v <- highchart() %>%
                 hcaes(name = label, y = nb_visits), showInLegend = T) %>%
   hc_add_theme(hc_theme_elementary())
 
-aa <- aggregate(nb_actions~label,vt,sum)
-aa$label <- as.numeric(sub("h","",as.character(aa$label)))
-aa <- aa[order(aa$label),]
+# aa <- aggregate(nb_actions~label,vt,sum)
+# aa$label <- as.numeric(sub("h","",as.character(aa$label)))
+# aa <- aa[order(aa$label),]
+# 
+# c_vh_a <- highchart() %>%
+#   hc_title(text = "Visits hours") %>%
+#   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
+#   hc_xAxis(categories = aa$label) %>%
+#   hc_chart(polar=T) %>%
+#   hc_add_series(aa, type="column", name = "number of actions",
+#                 hcaes(name = label, y = nb_actions), showInLegend = T) %>%
+#   hc_add_theme(hc_theme_elementary())
 
-c_vh_a <- highchart() %>%
-  hc_title(text = "Visits hours") %>%
-  hc_subtitle(text="in cumulated number of actions for 3 months") %>%
-  hc_xAxis(categories = aa$label) %>%
+vt_d <- d[["VisitTime"]][["getByDayOfWeek"]]
+vt_d <- vt_d[vt_d$date>=min(v$date),]
+vt_d$nb_visits <- as.numeric(vt_d$nb_visits)
+
+av_d <- aggregate(nb_visits~label,vt_d,sum)
+av_d$label <- as.character(av_d$label)
+#av_d <- av_d[order(av_d$label),]
+days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
+rownames(av_d) <- av_d$label
+av_d <- av_d[days,]
+
+c_av_d <- highchart() %>%
+  hc_title(text = "Visits days") %>%
+  hc_subtitle(text="in cumulated number of visits for 3 months") %>%
+  hc_xAxis(categories = av_d$label) %>%
   hc_chart(polar=T) %>%
-  hc_add_series(aa, type="column", name = "number of actions",
-                hcaes(name = label, y = nb_actions), showInLegend = T) %>%
+  hc_add_series(av_d, type="column", name = "number of visits",
+                hcaes(name = label, y = nb_visits), showInLegend = T) %>%
   hc_add_theme(hc_theme_elementary())
 
 ```
@@ -308,7 +377,8 @@ c_vh_v
 </td><td width="50%">
 
 ```{r echo=FALSE}
-c_vh_a
+#c_vh_a
+c_av_d
 ```
 
 </td></tr></table>
@@ -355,24 +425,32 @@ pa[pa$cat1=="macro economic indicators",]$cat0 <- "macro economic indicators"
 pa[pa$cat1=="external sector",]$cat0 <- "current account"
 
 pa_sel <- pa[pa$sel==1,]
-#pa_sel_a <- aggregate(nb_hits~cat,pa_sel,sum)
+pa_sel_a <- aggregate(nb_hits~cat,pa_sel,sum)
 
-# highchart() %>%
-#   hc_title(text = "actions by content") %>%
-#   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
-#   hc_add_series(pa_sel_a, type="treemap", name = "number of actions",
-#                 hcaes(x = cat, value = nb_hits, color=nb_hits), showInLegend = T) %>%
-#   hc_add_theme(hc_theme_elementary())
-
-tm <- treemap(pa_sel, index = c("cat", "cat0"),
-              vSize = "nb_hits", vColor = "nb_hits",
-              type = "comp", draw=F, palette = rev(viridis(6)))
-
-hctreemap(tm, allowDrillToNode = TRUE, layoutAlgorithm = "squarified") %>%
+highchart() %>%
   hc_title(text = "actions by content") %>%
   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
+  hc_add_series(pa_sel_a, type="treemap", name = "number of actions",
+                hcaes(x = cat, value = nb_hits, color=nb_hits), showInLegend = T) %>%
   hc_add_theme(hc_theme_elementary())
 
+# tm <- treemap(pa_sel, index = c("cat", "cat0"),
+#               vSize = "nb_hits", vColor = "nb_hits",
+#               type = "comp", draw=F, palette = rev(viridis(6)))
+# 
+# hctreemap(tm, allowDrillToNode = TRUE, layoutAlgorithm = "squarified") %>%
+#   hc_title(text = "actions by content") %>%
+#   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
+#   hc_add_theme(hc_theme_elementary())
+
+
+```
+
+```{r}
+
+twitter <- v[grep("twitter|co$",v$referrerName, ignore.case=T),]
+linkedin <- v[grep("linkedin",v$referrerName, ignore.case=T),]
+facebook <- v[grep("facebook",v$referrerName, ignore.case=T),]
 
 ```
 
