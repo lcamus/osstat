@@ -10,6 +10,8 @@ suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
 suppressMessages(suppressWarnings(library(dplyr)))
 #library(dplyr)
+library(treemap)
+library("viridis")
 load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
@@ -317,12 +319,59 @@ c_vh_a
 p <- d[["Actions"]][["getPageUrls"]]
 p <- p[p$date>="2017-03-01",]
 p$label <- as.character(p$label)
+p$cat1 <- sub("\\?.*$","",p$label) 
+p$cat1 <- sub("^/","",p$cat1)
+p$cat1 <- gsub("-"," ",p$cat1)
+p$nb_hits <- as.numeric(p$nb_hits)
 
-# pat <- "(?<=^.*)\\?.*$"
-# m_v <- regmatches(p$label,regexpr(pat,p$label,perl=T))
-# m_i <- grepl(pat,p$label,perl=T)
+pa <- aggregate(nb_hits~cat1,p,sum)
+exclude <- c("index","classic","embed","Others","")
+pa$sel <- 0
+pa[!pa$cat1 %in% exclude,]$sel <- 1
+pa[pa$nb_hits<pa[pa$cat1=="embed",]$nb_hits,]$sel <- 0
+pa <- pa[order(-pa$nb_hits),]
 
+cat <- c("Bank interest rates","Banks balance sheet","Competitiveness indicators","External sector","Inflation rates","Investment funds","Macro economic indicators","Securities","Financing and investment dynamics")
+cat <- tolower(cat)
 
+t<-sapply(cat,function(x) grep(x,pa$cat1))
+
+pa$cat <- ""
+for (i in 1:length(t))
+  for (j in 1:length(t[[i]]))
+    pa[t[[i]][j],]$cat <- names(t)[i]
+pa[pa$cat1=="macroeconomic scoreboard",]$cat <- "macro economic indicators"
+pa[pa$cat1=="international investment position",]$cat <- "external sector"
+pa[pa$cat1=="external debt",]$cat <- "external sector"
+pa[pa$cat1=="financial account",]$cat <- "external sector"
+pa[pa$cat1=="reserve assets",]$cat <- "external sector"
+
+pa$cat0 <- ""
+pa[pa$sel==1,]$cat0  <-
+  sub("^ ","",
+      sapply(1:nrow(pa[pa$sel==1,]),function(x) sub(pa[pa$sel==1,][x,]$cat,"",pa[pa$sel==1,][x,]$cat1)))
+
+pa[pa$cat1=="macro economic indicators",]$cat0 <- "macro economic indicators"
+pa[pa$cat1=="external sector",]$cat0 <- "current account"
+
+pa_sel <- pa[pa$sel==1,]
+#pa_sel_a <- aggregate(nb_hits~cat,pa_sel,sum)
+
+# highchart() %>%
+#   hc_title(text = "actions by content") %>%
+#   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
+#   hc_add_series(pa_sel_a, type="treemap", name = "number of actions",
+#                 hcaes(x = cat, value = nb_hits, color=nb_hits), showInLegend = T) %>%
+#   hc_add_theme(hc_theme_elementary())
+
+tm <- treemap(pa_sel, index = c("cat", "cat0"),
+              vSize = "nb_hits", vColor = "nb_hits",
+              type = "comp", draw=F, palette = rev(viridis(6)))
+
+hctreemap(tm, allowDrillToNode = TRUE, layoutAlgorithm = "squarified") %>%
+  hc_title(text = "actions by content") %>%
+  hc_subtitle(text="in cumulated number of actions for 3 months") %>%
+  hc_add_theme(hc_theme_elementary())
 
 
 ```
