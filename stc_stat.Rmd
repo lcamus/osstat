@@ -10,7 +10,7 @@ output:
 suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
 suppressMessages(suppressWarnings(library(dplyr)))
-load("data/d.RData")
+if (!exists("d")) load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
 
@@ -412,7 +412,7 @@ cc <- setNames(data.frame(t(table(v$countryCode)))[,c("Var2","Freq")],c("country
 cc$countryCode <- as.character(cc$countryCode)
 
 c1 <- function() {
-  hcmap(map = "custom/world", download_map_data=T, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits",
+  hcmap(map = "custom/world", download_map_data=F, data=cc, joinBy=c("hc-key","countryCode"), value="nbVisits",
         name="number of visits") %>%
     hc_exporting(enabled=T) %>%
     hc_credits(enabled=F) %>%
@@ -529,7 +529,9 @@ c_av_d
 
 ```{r echo=FALSE}
 
-clean <- function(begin,end) {
+clean <- function(begin,end,agreg) {
+  
+  if (missing(agreg)) agreg <- T
   
   p <- d[["Actions"]][["getPageUrls"]]
   p <- p[p$date>=begin & p$date<=end,]
@@ -539,11 +541,17 @@ clean <- function(begin,end) {
   p$cat1 <- gsub("-"," ",p$cat1)
   p$nb_hits <- as.numeric(p$nb_hits)
   
-  pa <- aggregate(nb_hits~cat1,p,sum)
-  exclude <- c("index","classic","embed","Others","")
+  if (agreg)
+    pa <- aggregate(nb_hits~cat1,p,sum) 
+  else
+    pa <- p
+  
+  #exclude <- c("index","classic","embed","Others","")
+  wl <- c("bank interest rates loans","financing and investment dynamics","macro economic indicators","inflation rates","bank interest rates deposits","competitiveness indicators","banks balance sheet deposits","banks balance sheet loans","macroeconomic scoreboard","securities quoted shares","external sector","international investment position","securities debt securities","investment funds assets","external debt","financial account","investment funds liabilities","investment funds policies","investment funds types","reserve assets")
   pa$sel <- 0
-  pa[!pa$cat1 %in% exclude,]$sel <- 1
-  pa[pa$nb_hits<pa[pa$cat1=="embed",]$nb_hits,]$sel <- 0
+  #pa[!pa$cat1 %in% exclude,]$sel <- 1
+  pa[pa$cat1 %in% wl,]$sel <- 1
+  #pa[pa$nb_hits<pa[pa$cat1=="embed",]$nb_hits,]$sel <- 0
   pa <- pa[order(-pa$nb_hits),]
   
   cat <- c("Bank interest rates","Banks balance sheet","Competitiveness indicators","External sector","Inflation rates","Investment funds","Macro economic indicators","Securities","Financing and investment dynamics")
@@ -553,39 +561,58 @@ clean <- function(begin,end) {
   
   pa$cat <- ""
   for (i in 1:length(t))
-    for (j in 1:length(t[[i]]))
-      pa[t[[i]][j],]$cat <- names(t)[i]
+    pa[t[[i]],]$cat <- names(t)[i]
+    #for (j in 1:length(t[[i]]))
+      #pa[t[[i]][j],]$cat <- names(t)[i]
+
   pa[pa$cat1=="macroeconomic scoreboard",]$cat <- "macro economic indicators"
   pa[pa$cat1=="international investment position",]$cat <- "external sector"
   pa[pa$cat1=="external debt",]$cat <- "external sector"
   pa[pa$cat1=="financial account",]$cat <- "external sector"
   pa[pa$cat1=="reserve assets",]$cat <- "external sector"
   
-  pa$cat0 <- ""
-  pa[pa$sel==1,]$cat0  <-
-    sub("^ ","",
-        sapply(1:nrow(pa[pa$sel==1,]),function(x) sub(pa[pa$sel==1,][x,]$cat,"",pa[pa$sel==1,][x,]$cat1)))
-  
-  pa[pa$cat1=="macro economic indicators",]$cat0 <- "macro economic indicators"
-  pa[pa$cat1=="external sector",]$cat0 <- "current account"
+  # pa$cat0 <- ""
+  # pa[pa$sel==1,]$cat0  <-
+  #   sub("^ ","",
+  #       sapply(1:nrow(pa[pa$sel==1,]),function(x) sub(pa[pa$sel==1,][x,]$cat,"",pa[pa$sel==1,][x,]$cat1)))
+  # 
+  # pa[pa$cat1=="macro economic indicators",]$cat0 <- "macro economic indicators"
+  # pa[pa$cat1=="external sector",]$cat0 <- "current account"
   
   pa_sel <- pa[pa$sel==1,]
-  pa_sel_a <- aggregate(nb_hits~cat,pa_sel,sum)
+  if (agreg)
+    pa_sel <- aggregate(nb_hits~cat,pa_sel,sum)[,c("cat","nb_hits")]
+  else
+    pa_sel <- pa_sel[,c("cat","nb_hits","date")]
   
-  return(pa_sel_a)
+  return(pa_sel)
   
 }
 
-pa_sel_a <- clean(begin="2017-03-01", end="2017-03-01")
+p_a <- clean(begin="2017-03-01", end="2017-05-31",agreg=T)
 
 highchart() %>%
   hc_exporting(enabled=T) %>%
   hc_title(text = "actions by content") %>%
   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
-  hc_add_series(pa_sel_a, type="treemap", name = "number of actions",
-                hcaes(x = cat, value = nb_hits, color=order(nb_hits)), showInLegend = T, colorByPoint=T) 
-# %>%
-#   hc_add_theme(hc_theme_elementary())
+  hc_add_series(p_a, type="treemap", name = "number of actions",
+                hcaes(x = cat, value = nb_hits, color=order(nb_hits)), showInLegend = T, colorByPoint=T)
+
+p <- clean(begin="2017-03-01", end="2017-05-31",agreg=F)
+
+require(viridis)
+hchart(p, "heatmap", hcaes(x = date, y = cat, value = nb_hits)) %>% 
+  hc_colorAxis(stops = color_stops(10, rev(inferno(10))),
+               type = "logarithmic") %>% 
+  hc_yAxis(reversed = TRUE, offset = -20, tickLength = 0,
+           gridLineWidth = 0, minorGridLineWidth = 0,
+           labels = list(style = list(fontSize = "8px"))) %>% 
+  # hc_tooltip(formatter = fntltp) %>% 
+  # hc_xAxis(plotLines = list(plotline)) %>%
+  hc_title(text = "Infectious Diseases and Vaccines") %>% 
+  hc_legend(layout = "vertical", verticalAlign = "top",
+            align = "right", valueDecimals = 0) %>% 
+  hc_size(height = 800)
 
 # tm <- treemap(pa_sel, index = c("cat", "cat0"),
 #               vSize = "nb_hits", vColor = "nb_hits",
