@@ -70,9 +70,11 @@ c_dv_18m
 <p/><hr>
 
 ```{r echo=FALSE}
+
+v$visitorType <- as.character(v$visitorType)
 visitorType <- setNames(as.data.frame(table(v$visitorType)),c("visitorType","number"))
 
-highchart() %>%
+c_visitors_vs <- highchart() %>%
   hc_exporting(enabled=T) %>%
   hc_chart(type="pie") %>%
   hc_title(text="New visitors vs Returning visitors") %>%
@@ -100,30 +102,34 @@ rm(visitorType)
 #next chart
 
 v$visitDuration <- as.numeric(as.character(v$visitDuration))
-v$visitorType <- as.character(v$visitorType)
-# vd.all <- v[v$visitDuration<=300,]$visitDuration
 vd.new <- v[v$visitDuration>0 & v$visitDuration<=300 & v$visitorType=="new",]$visitDuration
 vd.ret <- v[v$visitDuration>0 & v$visitDuration<=300 & v$visitorType=="returning",]$visitDuration
 vd.breaks <- seq(from=0,to=300,by=6)
 vd.c.new <- table(cut(x=vd.new,breaks=vd.breaks,include.lowest=F,right=F))
 vd.c.ret <- -table(cut(x=vd.ret,breaks=vd.breaks,include.lowest=F,right=F))
+names(vd.c.new) <- sub(")","[",names(vd.c.new))
+names(vd.c.new) <- sub(",",", ",names(vd.c.new))
+names(vd.c.new)[1] <- sub("\\[0","]0",names(vd.c.new)[1])
 
 series <- list(
-  list(data=vd.c.ret,name="returning"),
-  list(data=vd.c.new,name="new")
+  list(data=vd.c.ret,name="returning visitors"),
+  list(data=vd.c.new,name="new visitors")
 )
 
 xaxis <- list(
+  title=list(text="visits duration in seconds interval"),
   gridLineWidth=1,
-  categories = names(vd.c.ret),
+  categories = names(vd.c.new),
   reversed = FALSE, tickInterval = 1,
   labels = list(step = 5))
 
 maxpop <- max(max(vd.c.new),max(vd.c.ret))
 
-highchart() %>%
+c_vd_visitor <- highchart() %>%
+  hc_exporting(enabled=T) %>%
   hc_chart(type = "bar") %>%
-  # hc_motion(enabled = TRUE, labels = yrs, series = c(0,1), autoplay = TRUE, updateInterval = 1) %>% 
+  hc_title(text="Visits duration according visitor type") %>%
+  hc_subtitle(text="in cumulated number of visits for 3 months") %>%
   hc_add_series_list(series) %>% 
   hc_plotOptions(
     series = list(stacking = "normal"),
@@ -131,6 +137,7 @@ highchart() %>%
   ) %>% 
   hc_tooltip(shared = TRUE) %>%
   hc_yAxis(
+    title=list(text="number of visits"),
     gridLineWidth=1,
     labels = list(
       formatter = JS("function(){ return Math.abs(this.value); }")
@@ -143,11 +150,25 @@ highchart() %>%
     rlist::list.merge(xaxis, list(opposite = TRUE, linkedTo = 0))
   ) %>% 
   hc_tooltip(shared = FALSE,
-             formatter = JS("function () { return '<b>' + this.series.name + ', age ' + this.point.category + '</b><br/>' + 'Population: ' + Highcharts.numberFormat(Math.abs(this.point.y), 0);}")
-  ) 
+             formatter = JS("function () { return '<b>' + this.series.name + '<br/>' + 'visits duration in ' + this.point.category + ' s</b><br/>' + 'number of visits: ' + Highcharts.numberFormat(Math.abs(this.point.y), 0);}")
+  ) %>%
+  hc_add_theme(hc_theme_elementary())
 
 ```
 
+<table width="100%"><tr width="100%"><td width="50%">
+
+```{r echo=FALSE}
+c_visitors_vs
+```
+
+</td><td width="50%">
+
+```{r echo=FALSE}
+c_vd_visitor
+```
+
+</td></tr></table>
 <p/><hr>
 
 ```{r echo=FALSE}
