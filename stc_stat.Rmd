@@ -112,8 +112,8 @@ names(vd.c.new) <- sub(",",", ",names(vd.c.new))
 names(vd.c.new)[1] <- sub("\\[0","]0",names(vd.c.new)[1])
 
 series <- list(
-  list(data=vd.c.ret,name="returning visitors"),
-  list(data=vd.c.new,name="new visitors")
+    list(data=vd.c.new,name="new visitors"),
+  list(data=vd.c.ret,name="returning visitors")
 )
 
 xaxis <- list(
@@ -156,13 +156,13 @@ c_vd_visitor <- highchart() %>%
 
 ```
 
-<table width="100%"><tr width="100%"><td width="50%">
+<table width="100%"><tr width="100%"><td width="33%">
 
 ```{r echo=FALSE}
 c_visitors_vs
 ```
 
-</td><td width="50%">
+</td><td width="67%">
 
 ```{r echo=FALSE}
 c_vd_visitor
@@ -546,26 +546,12 @@ c_vh_v <- highchart() %>%
                 hcaes(name = label, y = nb_visits), showInLegend = T) %>%
   hc_add_theme(hc_theme_elementary())
 
-# aa <- aggregate(nb_actions~label,vt,sum)
-# aa$label <- as.numeric(sub("h","",as.character(aa$label)))
-# aa <- aa[order(aa$label),]
-# 
-# c_vh_a <- highchart() %>%
-#   hc_title(text = "Visits hours") %>%
-#   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
-#   hc_xAxis(categories = aa$label) %>%
-#   hc_chart(polar=T) %>%
-#   hc_add_series(aa, type="column", name = "number of actions",
-#                 hcaes(name = label, y = nb_actions), showInLegend = T) %>%
-#   hc_add_theme(hc_theme_elementary())
-
 vt_d <- d[["VisitTime"]][["getByDayOfWeek"]]
 vt_d <- vt_d[vt_d$date>=min(v$date),]
 vt_d$nb_visits <- as.numeric(vt_d$nb_visits)
 
 av_d <- aggregate(nb_visits~label,vt_d,sum)
 av_d$label <- as.character(av_d$label)
-#av_d <- av_d[order(av_d$label),]
 days <- c("Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday")
 rownames(av_d) <- av_d$label
 av_d <- av_d[days,]
@@ -590,7 +576,6 @@ c_vh_v
 </td><td width="50%">
 
 ```{r echo=FALSE}
-#c_vh_a
 c_av_d
 ```
 
@@ -655,7 +640,7 @@ highchart() %>%
   hc_title(text = "actions by content") %>%
   hc_subtitle(text="in cumulated number of actions for 3 months") %>%
   hc_add_series(p_a, type="treemap", name = "number of actions",
-                hcaes(x = cat, value = nb_hits, color=order(nb_hits)), showInLegend = T, colorByPoint=T)
+                hcaes(x = cat, value = nb_hits, color=order(nb_hits)), showInLegend = F, colorByPoint=T)
 
 
 ```
@@ -683,8 +668,6 @@ hchart(p, "heatmap", hcaes(x = as.character(date), y = cat, value = nb_hits)) %>
   hc_yAxis(reversed = TRUE, offset = 0, tickLength = 0,
            gridLineWidth = 0, minorGridLineWidth = 0,
            title=list(text="")
-           # ,
-           # labels = list(style = list(fontSize = "8px"))
   ) %>% 
   hc_tooltip(formatter = fntltp) %>%
   hc_xAxis(
@@ -695,8 +678,6 @@ hchart(p, "heatmap", hcaes(x = as.character(date), y = cat, value = nb_hits)) %>
   hc_subtitle(text="in daily actions for 3 months") %>%
   hc_legend(layout = "vertical", verticalAlign = "top",
             align = "right", valueDecimals = 0)
-# %>% 
-#   hc_size(height = 800)
 
 
 ```
