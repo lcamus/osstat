@@ -97,6 +97,55 @@ highchart() %>%
 
 rm(visitorType)
 
+#next chart
+
+v$visitDuration <- as.numeric(as.character(v$visitDuration))
+v$visitorType <- as.character(v$visitorType)
+# vd.all <- v[v$visitDuration<=300,]$visitDuration
+vd.new <- v[v$visitDuration>0 & v$visitDuration<=300 & v$visitorType=="new",]$visitDuration
+vd.ret <- v[v$visitDuration>0 & v$visitDuration<=300 & v$visitorType=="returning",]$visitDuration
+vd.breaks <- seq(from=0,to=300,by=6)
+vd.c.new <- table(cut(x=vd.new,breaks=vd.breaks,include.lowest=F,right=F))
+vd.c.ret <- -table(cut(x=vd.ret,breaks=vd.breaks,include.lowest=F,right=F))
+
+series <- list(
+  list(data=vd.c.ret,name="returning"),
+  list(data=vd.c.new,name="new")
+)
+
+xaxis <- list(
+  gridLineWidth=1,
+  categories = names(vd.c.ret),
+  reversed = FALSE, tickInterval = 1,
+  labels = list(step = 5))
+
+maxpop <- max(max(vd.c.new),max(vd.c.ret))
+
+highchart() %>%
+  hc_chart(type = "bar") %>%
+  # hc_motion(enabled = TRUE, labels = yrs, series = c(0,1), autoplay = TRUE, updateInterval = 1) %>% 
+  hc_add_series_list(series) %>% 
+  hc_plotOptions(
+    series = list(stacking = "normal"),
+    bar = list(groupPadding = 0, pointPadding =  0, borderWidth = 0)
+  ) %>% 
+  hc_tooltip(shared = TRUE) %>%
+  hc_yAxis(
+    gridLineWidth=1,
+    labels = list(
+      formatter = JS("function(){ return Math.abs(this.value); }")
+    ),
+    tickInterval = 100,
+    min = -maxpop,
+    max = maxpop) %>%
+  hc_xAxis(
+    xaxis,
+    rlist::list.merge(xaxis, list(opposite = TRUE, linkedTo = 0))
+  ) %>% 
+  hc_tooltip(shared = FALSE,
+             formatter = JS("function () { return '<b>' + this.series.name + ', age ' + this.point.category + '</b><br/>' + 'Population: ' + Highcharts.numberFormat(Math.abs(this.point.y), 0);}")
+  ) 
+
 ```
 
 <p/><hr>
