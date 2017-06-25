@@ -10,12 +10,43 @@ output:
 suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
 suppressMessages(suppressWarnings(library(dplyr)))
+suppressMessages(require(viridis))
 if (!exists("d")) load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 ```
 
 
 ```{r echo=FALSE}
+
+setMarkersDatalabels <- function(data, var) {
+  
+  setPoint <- function(obs) {
+    l <- list(
+      list(
+        marker=list(fillColor="#41B5E9",lineWidth=3,lineColor="#D0EDFA"),
+        dataLabels=list(enabled=T,x=1),
+        y=obs
+      )
+    )
+    return(l)
+  }
+  
+  max_cond <- data[,c(var)]==max(data[,c(var)])
+  min_cond <- data[,c(var)]==min(data[,c(var)])
+  breaks <- list(
+    list(which(max_cond),max(data[,c(var)])),
+    list(which(min_cond),min(data[,c(var)])),
+    list(nrow(data),tail(data[,c(var)],1))
+  )
+  hc_data <- lapply(seq(1,which(max_cond)-1),function(x){data[x,c(var)]})
+  hc_data <- c(hc_data,setPoint(max(data[,c(var)])))
+  hc_data <- c(hc_data,
+               lapply(seq(which(max_cond)+1,length(max_cond)-1),function(x){data[x,c(var)]}))
+  hc_data <- c(hc_data,setPoint(tail(data[,c(var)],1)))
+  
+  return(hc_data)
+  
+}
 
 c_dailyvisits <- function(df, lib) {
   
@@ -24,6 +55,8 @@ c_dailyvisits <- function(df, lib) {
   l<- setNames(as.data.frame(l),c("label","value"))
   l$value <- round(l$value)
   
+  hc_data <- setMarkersDatalabels(data,"nb_visits")
+  
   highchart() %>%
     hc_exporting(enabled=T) %>%
     hc_title(text="Number of visits") %>%
@@ -31,7 +64,7 @@ c_dailyvisits <- function(df, lib) {
     hc_xAxis(categories=data$date, 
              title=list(text="")) %>%
     hc_yAxis(title=list(text="number of visits (daily)")) %>%
-    hc_add_series(name="visits (unadjusted)", data=data$nb_visits) %>%
+    hc_add_series(name="visits (unadjusted)", data=hc_data) %>%
     hc_add_series(name="visits (trend)", data=l$value) %>%
     hc_add_theme(hc_theme_elementary())
   
@@ -653,8 +686,6 @@ begin <- "2017-03-01"
 end <- "2017-05-31"
 
 p <- clean(begin,end,agreg=F)
-
-suppressMessages(require(viridis))
 
 fntltp <- JS("function(){
   return this.series.xAxis.categories[this.point.x] + ' ' +  this.series.yAxis.categories[this.point.y] + ':<br>' +
