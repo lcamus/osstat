@@ -7,12 +7,14 @@ output:
 <p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p>
 
 ```{r setup, include=TRUE, echo=FALSE}
+
 suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
-suppressMessages(suppressWarnings(library(dplyr)))
+#suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(require(viridis))
 if (!exists("d")) load("data/d.RData")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
+
 ```
 
 
@@ -43,13 +45,16 @@ setMarkersDatalabels <- function(data, var) {
   )
   breaks <- breaks[order(breaks$x),]
   
-  hc_data <- lapply(seq(1,which(max_cond)-1),function(x){data[x,c(var)]})
-  hc_data <- c(hc_data,setPoint(max(data[,c(var)])))
-  hc_data <- c(hc_data,
-               lapply(seq(which(max_cond)+1,length(max_cond)-1),function(x){data[x,c(var)]}))
-  hc_data <- c(hc_data,setPoint(tail(data[,c(var)],1)))
+  hc.data <- lapply(seq(1,tail(breaks$x,1)),function(x){data[x,c(var)]})
+  hc.data[breaks$x] <- sapply(seq(1,nrow(breaks)),function(x){setPoint(breaks[x,]$y)})
   
-  return(hc_data)
+  # hc.data <- lapply(seq(1,which(max_cond)-1),function(x){data[x,c(var)]})
+  # hc.data <- c(hc.data,setPoint(max(data[,c(var)])))
+  # hc.data <- c(hc.data,
+  #              lapply(seq(which(max_cond)+1,length(max_cond)-1),function(x){data[x,c(var)]}))
+  # hc.data <- c(hc.data,setPoint(tail(data[,c(var)],1)))
+  
+  return(hc.data)
   
 }
 
@@ -60,7 +65,7 @@ c_dailyvisits <- function(df, lib) {
   l<- setNames(as.data.frame(l),c("label","value"))
   l$value <- round(l$value)
   
-  hc_data <- setMarkersDatalabels(data,"nb_visits")
+  hc_data <- setMarkersDatalabels(df,"nb_visits")
   
   highchart() %>%
     hc_exporting(enabled=T) %>%
