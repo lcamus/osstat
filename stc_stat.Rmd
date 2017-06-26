@@ -33,11 +33,16 @@ setMarkersDatalabels <- function(data, var) {
   
   max_cond <- data[,c(var)]==max(data[,c(var)])
   min_cond <- data[,c(var)]==min(data[,c(var)])
-  breaks <- list(
-    list(which(max_cond),max(data[,c(var)])),
-    list(which(min_cond),min(data[,c(var)])),
-    list(nrow(data),tail(data[,c(var)],1))
+  
+  breaks <- setNames(
+    data.frame(
+      c(which(max_cond),which(min_cond),nrow(data)),
+      c(max(data[,c(var)]),min(data[,c(var)]),tail(data[,c(var)],1))
+    ),
+    c("x","y")
   )
+  breaks <- breaks[order(breaks$x),]
+  
   hc_data <- lapply(seq(1,which(max_cond)-1),function(x){data[x,c(var)]})
   hc_data <- c(hc_data,setPoint(max(data[,c(var)])))
   hc_data <- c(hc_data,
