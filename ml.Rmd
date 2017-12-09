@@ -1,0 +1,157 @@
+---
+title: "R Notebook"
+output:
+  html_document:
+    df_print: paged
+editor_options:
+  chunk_output_type: inline
+---
+
+This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+
+Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Ctrl+Shift+Enter*. 
+
+```{r}
+library(tibble)
+fdata <- "data/d.RData"
+if (!exists("d") & file.exists(fdata)) {
+  load(fdata)
+}
+
+
+```
+
+```{r}
+v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
+names(v)
+glimpse(v)
+```
+
+Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
+```{r}
+library(tidyverse)
+library(varhandle)
+v.s <- v %>% 
+  select(visitCount, actions, daysSinceFirstVisit, daysSinceLastVisit, visitDuration) %>% 
+  na.omit()
+v.s <- as.data.frame(scale(unfactor(v.s)))
+set.seed(2811)
+km_model <- v.s %>% 
+  kmeans(centers = 5, nstart=20)
+v.s$cluster <- km_model$cluster
+```
+```{r}
+ggplot(v.s, aes(visitCount, actions, col = factor(cluster))) + 
+geom_point(size = 2, alpha = 0.8, position = "jitter")
+```
+```{r}
+ratio_ss <- data.frame(cluster = seq(from = 1, to = 9, by = 1)) 
+for (k in 1:9) {
+km_model <- kmeans(v.s, k, nstart = 20)
+ratio_ss$ratio[k] <- km_model$tot.withinss / km_model$totss
+}
+
+ggplot(ratio_ss, aes(cluster, ratio)) + 
+geom_line() +
+geom_point()
+```
+```{r}
+km_model <- v.s %>% 
+  kmeans(centers = 3, nstart=20)
+v.s$cluster <- km_model$cluster
+ggplot(v.s, aes(visitCount, actions, col = factor(cluster))) + 
+  geom_point(size = 2, alpha = 0.8, position = "jitter")
+```
+```{r}
+km_model <- v.s %>% 
+  kmeans(centers = 3, nstart=20)
+v.s$cluster <- km_model$cluster
+ggplot(v.s, aes(visitCount, visitDuration, col = factor(cluster))) + 
+  geom_point(size = 2, alpha = 0.8, position = "jitter")
+```
+```{r}
+km_model <- v.s %>% 
+  kmeans(centers = 3, nstart=20)
+v.s$cluster <- km_model$cluster
+ggplot(v.s, aes(visitCount, visitDuration, col = factor(cluster))) + 
+  geom_point(size = 2, alpha = 0.8, position = "jitter")
+```
+
+```{r}
+a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
+names(a)
+glimpse(a)
+```
+```{r}
+library(plyr)
+library(tidyverse)
+
+# p <- d[["Actions"]][["getPageUrls"]]
+p <- a[a$field == "url", ]
+p$url <- as.character(p$value)
+p$cat1 <- sub("^https://www.euro-area-statistics.org/", "", p$url)
+p$cat1 <- sub("data\\?project=","data/",p$cat1)
+p$cat1 <- sub("&chart=.+$","",p$cat1)
+p$cat1 <- sub("^data/","",p$cat1)
+p$cat1 <- sub("\\?.*$", "", p$cat1)
+p$cat1 <- sub("^/", "", p$cat1)
+p$cat1 <- gsub("-", " ", p$cat1)
+p$cat1 <- sub("classic/banks corner","/banks corner/",p$cat1)
+p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/BSI/.*$","/sdw/ bsi",p$cat1)
+p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/MIR/.*$","/sdw/ mir",p$cat1)
+p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/SEC/.*$","/sdw/ sec",p$cat1)
+p$cat1 <- sub("^$","/homepage/",p$cat1)
+p$cat1 <- sub("^.*embed.*","/embed/",p$cat1)
+p$cat1 <- sub("^https?://.*$","/outlink/",p$cat1)
+p$cat1 <- sub("classic/","/insight/",p$cat1)
+
+p$nb_hits <- 1
+View(sort(table(p$cat1),decreasing=F))
+
+pa <- aggregate(nb_hits~cat1,p,sum) 
+
+p <- merge(p,pa,by="cat1",all.x=T)
+p[p$nb_hits.y<50,]$cat1 <- "~others"
+p.s <- p %>%
+  select(idVisit, cat1)
+p.s <- spread(as.data.frame(table(p.s)),cat1,Freq)
+v <- merge(x=v, y=p.s,by="idVisit",all.x=T)
+rm(p,p.s)
+  
+```
+```{r}
+library(tidyverse)
+library(varhandle)
+v.s <- v %>% 
+  select(c(79:113)) %>% na.omit()
+# v.s <- as.data.frame(scale(unfactor(v.s)))
+v.s <- as.data.frame(unfactor(v.s))
+set.seed(2811)
+km_model <- v.s %>% 
+  kmeans(centers = 2,nstart=20, iter.max=20)
+v.s$cluster <- km_model$cluster
+table(v.s$cluster)
+```
+```{r}
+ratio_ss <- data.frame(cluster = seq(from = 1, to = 9, by = 1)) 
+for (k in 1:9) {
+km_model <- kmeans(v.s, k, nstart = 20, iter.max=20)
+ratio_ss$ratio[k] <- km_model$tot.withinss / km_model$totss
+}
+
+ggplot(ratio_ss, aes(cluster, ratio)) + 
+geom_line() +
+geom_point()
+```
+
+```{r}
+# library(devtools)
+# install_github("mtennekes/tabplot")
+library(tabplot)
+tableplot(v.s[v.s$cluster==1,],nCols=10,select=1:35)
+tableplot(v.s[v.s$cluster==2,],nCols=10,select=1:35)
+```
+
+When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Ctrl+Shift+K* to preview the HTML file).
+
+The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
