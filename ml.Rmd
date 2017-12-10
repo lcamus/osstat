@@ -21,16 +21,11 @@ if (!exists("d") & file.exists(fdata)) {
 
 ```
 
-```{r}
-v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
-names(v)
-glimpse(v)
-```
-
 Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Ctrl+Alt+I*.
 ```{r}
 library(tidyverse)
 library(varhandle)
+v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 v.s <- v %>% 
   select(visitCount, actions, daysSinceFirstVisit, daysSinceLastVisit, visitDuration) %>% 
   na.omit()
@@ -78,16 +73,12 @@ ggplot(v.s, aes(visitCount, visitDuration, col = factor(cluster))) +
 ```
 
 ```{r}
-a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
-names(a)
-glimpse(a)
-```
-```{r}
 library(plyr)
 library(tidyverse)
 
-# p <- d[["Actions"]][["getPageUrls"]]
+a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
 p <- a[a$field == "url", ]
+rm(a)
 p$url <- as.character(p$value)
 p$cat1 <- sub("^https://www.euro-area-statistics.org/", "", p$url)
 p$cat1 <- sub("data\\?project=","data/",p$cat1)
@@ -96,52 +87,174 @@ p$cat1 <- sub("^data/","",p$cat1)
 p$cat1 <- sub("\\?.*$", "", p$cat1)
 p$cat1 <- sub("^/", "", p$cat1)
 p$cat1 <- gsub("-", " ", p$cat1)
-p$cat1 <- sub("classic/banks corner","/banks corner/",p$cat1)
-p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/BSI/.*$","/sdw/ bsi",p$cat1)
-p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/MIR/.*$","/sdw/ mir",p$cat1)
-p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/SEC/.*$","/sdw/ sec",p$cat1)
-p$cat1 <- sub("^$","/homepage/",p$cat1)
-p$cat1 <- sub("^.*embed.*","/embed/",p$cat1)
-p$cat1 <- sub("^https?://.*$","/outlink/",p$cat1)
-p$cat1 <- sub("classic/","/insight/",p$cat1)
+# p$cat1 <- sub("classic/banks corner","/banks corner/",p$cat1)
+p$cat1 <- sub("classic/banks corner.*$","/banks corner",p$cat1)
+# p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/BSI/.*$","/sdw/ bsi",p$cat1)
+# p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/MIR/.*$","/sdw/ mir",p$cat1)
+# p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/SEC/.*$","/sdw/ sec",p$cat1)
+p$cat1 <- sub("https://sdw wsrest.ecb.europa.eu/service/data/.*$","/sdw",p$cat1)
+p$cat1 <- sub("^$","/homepage",p$cat1)
+p$cat1 <- sub("^.*embed.*","/embed",p$cat1)
+p$cat1 <- sub("^https?://.*$","/outlink",p$cat1)
+# p$cat1 <- sub("classic/","/insight/",p$cat1)
+p$cat1 <- sub("classic/.*$","/insight",p$cat1)
+#
+p$cat1 <- sub("bank interest rates.*$","bank.interest",p$cat1)
+p$cat1 <- sub("banks balance sheet.*$","banks.balance",p$cat1)
+p$cat1 <- sub("investment funds.*$","investment",p$cat1)
+p$cat1 <- sub("securities.*$","securities",p$cat1)
+p$cat1 <- sub("macro ?economic.*$","macroeconomic",p$cat1)
+p$cat1 <- sub("((external)|(financial)|(reserve)|(international)).*$","external",p$cat1)
+p$cat1 <- sub("financing and investment dynamics.*$","financing",p$cat1)
+p$cat1 <- sub("inflation rates","inflation",p$cat1)
+p$cat1 <- sub("competitiveness indicators","competitiveness",p$cat1)
 
+# View(sort(table(p$cat1),decreasing=T))
+
+```
+
+```{r}
 p$nb_hits <- 1
-View(sort(table(p$cat1),decreasing=F))
-
 pa <- aggregate(nb_hits~cat1,p,sum) 
-
 p <- merge(p,pa,by="cat1",all.x=T)
+rm(pa)
 p[p$nb_hits.y<50,]$cat1 <- "~others"
 p.s <- p %>%
   select(idVisit, cat1)
+rm(p)
 p.s <- spread(as.data.frame(table(p.s)),cat1,Freq)
+
+v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 v <- merge(x=v, y=p.s,by="idVisit",all.x=T)
-rm(p,p.s)
-  
-```
-```{r}
-library(tidyverse)
+rm(p.s)
+
 library(varhandle)
 v.s <- v %>% 
-  select(c(79:113)) %>% na.omit()
+  select(c(79:94)) %>% na.omit()
 # v.s <- as.data.frame(scale(unfactor(v.s)))
 v.s <- as.data.frame(unfactor(v.s))
-set.seed(2811)
-km_model <- v.s %>% 
-  kmeans(centers = 2,nstart=20, iter.max=20)
-v.s$cluster <- km_model$cluster
-table(v.s$cluster)
+
 ```
 ```{r}
+# par(mar = rep(2, 4))
+# plot(v.s)
+```
+
+```{r}
+library(ggplot2)
+
 ratio_ss <- data.frame(cluster = seq(from = 1, to = 9, by = 1)) 
 for (k in 1:9) {
-km_model <- kmeans(v.s, k, nstart = 20, iter.max=20)
+km_model <- kmeans(v.s, k, nstart = 25, iter.max=1000)
 ratio_ss$ratio[k] <- km_model$tot.withinss / km_model$totss
 }
 
 ggplot(ratio_ss, aes(cluster, ratio)) + 
 geom_line() +
 geom_point()
+```
+
+```{r}
+library(mclust)
+d_clust <- Mclust(as.matrix(v.s), G=1:15,
+modelNames = mclust.options("emModelNames"))
+d_clust$BIC
+plot(d_clust) #option 1 (BIC)
+```
+```{r}
+set.seed(2811)
+km_model <- v.s %>% 
+  kmeans(centers = 2,nstart=20, iter.max=20)
+v.s$cluster <- km_model$cluster
+table(v.s$cluster)
+```
+
+```{r}
+mar <- par()$mar
+par(mar=mar+c(0,5,0,0))
+barplot(as.numeric(lapply(v.s,function(x) var(x))),horiz=T,las=1,cex.names=0.8,names.arg=names(v.s))
+barplot(as.numeric(lapply(v.s,function(x) var(x))),horiz=T,las=1,cex.names=0.8,names.arg=names(v.s),log='x')
+par(mar=mar)
+```
+
+```{r}
+#basic PCA
+pc <- princomp(v.s,cor=F)
+plot(pc)
+# summary(pc)
+pc$sdev
+unclass(loadings(pc))
+# head(pc$scores)
+```
+```{r}
+#advanced PCA
+library(FactoMineR)
+library(factoextra)
+pc <- PCA(v.s,ncp=16)
+pc$eig
+# summary(pc)
+plot(pc$eig[,c(1)],type="b",ylab="variance",xlab="components")
+plot(pc$eig[,c(2)],type="b",ylab="cumulated variance",xlab="components")
+fviz_eig(pc, addlabels = TRUE, ylim = c(0, 50))
+#lapply(14:16,function(x){round(pc$var$contrib[,c(x)]*pc$eig[,c(2)][x]/100,2)})
+```
+
+```{r}
+# plot(prcomp(v.s))
+#number of components cumulating >85% of total variance:
+nb.comp <- length(pc$eig[pc$eig[,c(3)]<85,c(3)])+1
+# nb.comp <- 10
+comp <- as.data.frame(pc$ind$coord[,1:nb.comp])
+# plot(comp,pch=16, col=rgb(0,0,0,0.5))
+```
+
+```{r}
+# library(rgl)
+# plot3d(comp$Dim.1, comp$Dim.2, comp$Dim.3)
+# plot3d(comp$Dim.1, comp$Dim.3, comp$Dim.4)
+# plot3d(comp$Dim.1, comp$Dim.4, comp$Dim.5)
+```
+
+```{r}
+# Determine number of clusters
+library(ggplot2)
+
+ratio_ss <- data.frame(cluster = seq(from = 1, to = 16, by = 1)) 
+for (k in 1:16) {
+km_model <- kmeans(comp, k, nstart = 25, iter.max=1000)
+ratio_ss$ratio[k] <- km_model$tot.withinss / km_model$totss
+}
+
+ggplot(ratio_ss, aes(cluster, ratio)) + 
+geom_line() +
+geom_point()
+
+
+# From scree plot elbow occurs at k = 4-6
+# we'll choose 4 clusters:
+# k <- kmeans(comp, 4, nstart=25, iter.max=1000)
+```
+
+```{r}
+library(factoextra)
+# Elbow method
+fviz_nbclust(comp, kmeans, method = "wss") +
+    # geom_vline(xintercept = 4, linetype = 2)+
+  labs(subtitle = "Elbow method")
+# Silhouette method
+fviz_nbclust(comp, kmeans, method = "silhouette")+
+  labs(subtitle = "Silhouette method")
+# Gap statistic
+# nboot = 50 to keep the function speedy. 
+# recommended value: nboot= 500 for your analysis.
+# Use verbose = FALSE to hide computing progression.
+set.seed(123)
+fviz_nbclust(comp, kmeans, nstart = 25,  method = "gap_stat", nboot = 50)+
+  labs(subtitle = "Gap statistic method")
+
+library("NbClust")
+nb <- NbClust(comp, distance = "euclidean", min.nc = 2,
+        max.nc = 10, method = "kmeans")
 ```
 
 ```{r}
