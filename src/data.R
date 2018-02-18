@@ -54,12 +54,13 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, 
   
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
-  if (visitsonly & visits)
+  if (visitsonly & visits) #only individual data
     scope <- "Live"
-  else
+  else if (!visits) #only aggregated data
+    scope <- names(d)[names(d) != "Live"]
+  else #all data (individual & aggregated)
     scope <- names(d)
   
-  #for (module in names(d)) {
   for (module in scope) {
     if (!visits)
       methods <- sapply(names(d[[module]]),function(x) gsub("^.*:.*$","",x))
@@ -80,12 +81,14 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, 
   
 }
 
-getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode) {
+getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode, idVisit) {
   
   if (object=="" | method=="") return(-1)
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(updatemode)) updatemode <- F
   if (missing(appendmode)) appendmode <- F
+  if (missing(idVisit)) idVisit <- NULL
+  if (missing(date)) date <- NULL
   
   print(object)
   print(method)
@@ -95,7 +98,11 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     submethod <- "getLastVisitsDetails:Visits"
   else
     submethod <- method
-  if (!updatemode & !appendmode & nrow(d[[object]][[submethod]][d[[object]][[submethod]]$date==date,])>0) return(-1)
+  dos <- d[[object]][[submethod]]
+  if (nrow(dos)>0)
+    if (!updatemode & !appendmode & nrow(dos[dos$date==date,])>0) return(-1)
+  rm(dos)
+  # if (!updatemode & !appendmode & nrow(d[[object]][[submethod]][d[[object]][[submethod]]$date==date,])>0) return(-1)
   
   require(stringi)
   options(stringsAsFactors=F)
@@ -203,7 +210,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     u <- paste(base,
                paste("method=", object, ".", method, sep=""),
                paste0("idSite=",idSite),
-               paste("date=", date, sep=""),
+               ifelse(!is.null(date),paste("date=", date, sep=""),""),
                paste0("period=",period),
                paste0("format=",format),
                paste0("token_auth=",token_auth),
@@ -215,11 +222,14 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     
     if (object=="Live" & method=="getLastVisitsDetails") {
       # read data in several calls for individual visits (heavy)
-      breaks <- c("visitServerHour%3C7",
-                  "visitServerHour%3E=7;visitServerHour%3C10",
-                  "visitServerHour%3E=10;visitServerHour%3C15",
-                  "visitServerHour%3E=15;visitServerHour%3C20",
-                  "visitServerHour%3E=20")
+      if (!is.null(idVisit))
+        breaks <- c(paste0("visitId==",idVisit))
+      else
+        breaks <- c("visitServerHour%3C7",
+                    "visitServerHour%3E=7;visitServerHour%3C10",
+                    "visitServerHour%3E=10;visitServerHour%3C15",
+                    "visitServerHour%3E=15;visitServerHour%3C20",
+                    "visitServerHour%3E=20")
       l <- lapply(breaks,function(x) {
         ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
         res <- readLines(ou, warn=F)
@@ -243,7 +253,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       df <- sapply(df,function(x) removeNullFields(x))
     }
     else {
-      # nominal case (not heavy)
+      # nominal case (not individual)
       ou <- url(description=u,encoding="UTF-16")
       l <- readLines(ou, warn=F)
       #error catch:
@@ -285,7 +295,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       d[[object]][[method]] <<- rbind(d[[object]][[method]],cc)
       print(paste0("*** alert: ",n," column(s) missing (compensated with NA column(s))"))
       # data requested has new columns :
-    } else if (ncol(d[[object]][[method]])<ncol(data)) {
+    } else if (nrow(d[[object]][[method]])!=0 & ncol(d[[object]][[method]])<ncol(data)) {
       stop("*** error: new columns detected")
       # otherwise (ok) :
     } else
@@ -302,8 +312,12 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
 
   if (is.null(d[[object]][[method]]))
     updatable <- FALSE
-  else
-    updatable <- nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0
+  else {
+    if (is.null(date))
+      updatable <- nrow(d[[object]][[method]])>0
+    else
+      updatable <- nrow(d[[object]][[method]][d[[object]][[method]]$date==date,])>0
+  }
   
   if (!updatable |(updatable & updatemode)) {
     # get the data from the API
@@ -321,13 +335,19 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     if (!updatable) {
       addRows(data)
     } else {
-      d[[object]][[method]] <<- d[[object]][[method]][d[[object]][[method]]$date!=date,]
+      if (!is.null(idVisit)) #restore individual visits by ID
+        d[[object]][[method]] <<- d[[object]][[method]][d[[object]][[method]]$idVisit!=idVisit,]
+      else #general use case
+        d[[object]][[method]] <<- d[[object]][[method]][d[[object]][[method]]$date!=date,]
       addRows(data)
     }    
   }
   
 }
 
-#getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
-
+go <- function() {
+  #getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
+  # getData(NULL,"Live","getLastVisitsDetails", updatemode=T, appendmode=F, filter_limit=-1,idVisit=211684)
+  collectData("2017-08-22", "2017-08-22", 10, updatemode=T, appendmode=F, visits=T, visitsonly=T)
+}
 

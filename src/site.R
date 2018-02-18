@@ -2,6 +2,9 @@
 #get structure of the website
 #---
 
+loadPackages("rvest")
+loadPackages("visNetwork")
+
 nodes <- data.frame(id=0,label="homepage",group="global",value=1,title="home",url=url_root)
 edges <- data.frame(from=0, to=0, label=NA, title="homepage")
 edges <- data.frame(from=0, to=0, label=NA, title="langue")
