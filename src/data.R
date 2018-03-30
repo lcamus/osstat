@@ -83,6 +83,8 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, 
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode, idVisit) {
   
+  print("***enter getData")
+  
   if (object=="" | method=="") return(-1)
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(updatemode)) updatemode <- F
@@ -99,8 +101,9 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   else
     submethod <- method
   dos <- d[[object]][[submethod]]
-  if (nrow(dos)>0)
-    if (!updatemode & !appendmode & nrow(dos[dos$date==date,])>0) return(-1)
+  if (!is.null(dos))
+    if (nrow(dos)>0)
+      if (!updatemode & !appendmode & nrow(dos[dos$date==date,])>0) return(-1)
   rm(dos)
   # if (!updatemode & !appendmode & nrow(d[[object]][[submethod]][d[[object]][[submethod]]$date==date,])>0) return(-1)
   
@@ -134,6 +137,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         d[[module]][[methodSub]] <<- data.frame(
           matrix(vector(),0,length(c_visits),dimnames=list(c(),c_visits)),
           stringsAsFactors=F)
+      print("getLastVisitsDetails:Visits")
+      print(paste0(nrow(d[[module]][[methodSub]])," ","visits"))
       
       if (updatemode | appendmode) {
         d[[module]][[methodSub]] <<- d[[module]][[methodSub]][d[[module]][[methodSub]]$date!=date |
@@ -179,14 +184,17 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         
         #append data in final structure
         d[[module]][[methodSub]] <<- rbind(d[[module]][[methodSub]],df_a)
-        attach(d[[module]][[methodSub]])
-        d[[module]][[methodSub]] <<- d[[module]][[methodSub]][order(idVisit,step),]
-        detach(d[[module]][[methodSub]])
-        row.names(d[[module]][[methodSub]]) <- 1:nrow(d[[module]][[methodSub]])
+        # attach(d[[module]][[methodSub]])
+        # d[[module]][[methodSub]] <<- d[[module]][[methodSub]][order(idVisit,step),]
+        d[[module]][[methodSub]] <<-
+          d[[module]][[methodSub]][order(d[[module]][[methodSub]]$idVisit,
+                                         d[[module]][[methodSub]]$step),]
+        # detach(d[[module]][[methodSub]])
+        row.names(d[[module]][[methodSub]]) <<- 1:nrow(d[[module]][[methodSub]])
         
       }
     
-  }
+  } #getData_Live_getLastVisitsDetails
   
   getData_APICall <- function() {
     
@@ -276,7 +284,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       
     return(df)
     
-  }
+  } #getData_APICall
   
   addRows <- function(data) {
     
@@ -301,7 +309,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     } else
       d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
     
-  }
+  } #addRows
     
   
   if (missing(filter_limit)) filter_limit <- "-1"
@@ -343,11 +351,12 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     }    
   }
   
+  print("***out getData")
 }
 
 go <- function() {
   #getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
   # getData(NULL,"Live","getLastVisitsDetails", updatemode=T, appendmode=F, filter_limit=-1,idVisit=211684)
-  collectData("2017-08-22", "2017-08-22", 10, updatemode=T, appendmode=F, visits=T, visitsonly=T)
+  collectData("2017-10-02", "2017-10-03", -1, updatemode=T, appendmode=F, visits=T, visitsonly=T)
 }
 
