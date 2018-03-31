@@ -44,22 +44,27 @@ getGID <- function(module,method) {
   
 }
 
-collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, visitsonly) {
+collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, visitsonly, modulescope) {
   
   if (missing(filter_limit)) filter_limit <- "-1"
   if (missing(visits)) visits <- F
   if (missing(updatemode)) updatemode <- F
   if (missing(appendmode)) appendmode <- F
   if (missing(visitsonly)) visitsonly <- F
+  if (missing(modulescope)) modulescope <- NULL
   
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
   
   if (visitsonly & visits) #only individual data
     scope <- "Live"
   else if (!visits) #only aggregated data
-    scope <- names(d)[names(d) != "Live"]
+    scope <- ifelse(is.null(modulescope),
+                    names(d)[names(d) != "Live"],
+                    modulescope)
   else #all data (individual & aggregated)
-    scope <- names(d)
+    scope <- ifelse(is.null(modulescope),
+                    names(d),
+                    modulescope)
   
   for (module in scope) {
     if (!visits)
@@ -303,7 +308,16 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       print(paste0("*** alert: ",n," column(s) missing (compensated with NA column(s))"))
       # data requested has new columns :
     } else if (nrow(d[[object]][[method]])!=0 & ncol(d[[object]][[method]])<ncol(data)) {
-      stop("*** error: new columns detected")
+      print("*** alert: new columns detected")
+      newcol <- which(names(data) != names(d[[object]][[method]]))
+      lapply(newcol,function(x) {
+        d[[object]][[method]][,c(x)] <<- ""
+        d[[object]][[method]] <<- setNames(d[[object]][[method]],
+                                           c(head(names(d[[object]][[method]]),-1),
+                                             names(data)[x]))
+        print(paste("*** variable",names(data)[x],"created"))
+      })
+      rm(newcol)
       # otherwise (ok) :
     } else
       d[[object]][[method]] <<- rbind(d[[object]][[method]],data)

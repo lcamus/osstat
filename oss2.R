@@ -87,13 +87,17 @@ collect <- function() {
     V <- T
     VO <- F
   }
+  modulescope <- readline(paste0("all analytical modules (default) or some (enter modules names separated by space)): "))
+  modulescope <- unlist(strsplit(modulescope," "))
   print(paste0("start to collect data from ",from," to ",to))
   print(paste0("aggregated data *",ifelse(VO,"no","yes"),
                "*, individual data *",ifelse(V,"yes","no"),
                "*"))
-  collectData(from=from, to=to, filter_limit=-1, updatemode=T, appendmode=F, visits=V, visitsonly=VO)
+  print(paste("analytical modules:",modulescope))
+  collectData(from=from, to=to, filter_limit=-1, updatemode=T, appendmode=F, visits=V, visitsonly=VO,
+              modulescope=modulescope)
   print("data collected")
-  rm(from,to,from.def,to.def,V,VO,collect.scope)
+  rm(from,to,from.def,to.def,V,VO,collect.scope,modulescope)
   #getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
   # getData(NULL,"Live","getLastVisitsDetails", updatemode=T, appendmode=F, filter_limit=-1,idVisit=211684)
   
