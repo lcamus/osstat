@@ -61,7 +61,24 @@ if (!exists("codeData") & file.exists(fcodeData)) {
 
 # get data :
 source("src/data.R")
-#save(d, file=fdata)
 
+#update data:
+from <- readline("collect from (enter yyyy-mm-dd date, default today): ")
+if (from=="") from <- Sys.Date()
+to <- readline(paste0("collect to (enter yyyy-mm-dd date, default ",from,"): "))
+if (to=="") to <- from
+collectData(from, to, -1, updatemode=T, appendmode=F, visits=T, visitsonly=T)
+rm(from,to)
+#getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
+# getData(NULL,"Live","getLastVisitsDetails", updatemode=T, appendmode=F, filter_limit=-1,idVisit=211684)
+
+# store updated data
+u <- toupper(readline("save updated data and replace previous one? ('y' or 'Y' to agree, default no) "))
+if (u=="Y") {
+  save(d, file=fdata)
+  print("updated data saved")
+} else
+  print("updated data not saved!")
+rm(u)
 
 

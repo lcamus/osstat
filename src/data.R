@@ -354,9 +354,5 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   print("***out getData")
 }
 
-go <- function() {
-  #getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
-  # getData(NULL,"Live","getLastVisitsDetails", updatemode=T, appendmode=F, filter_limit=-1,idVisit=211684)
-  collectData("2017-10-02", "2017-10-03", -1, updatemode=T, appendmode=F, visits=T, visitsonly=T)
-}
+
 

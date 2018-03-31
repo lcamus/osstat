@@ -34,12 +34,12 @@ a <- a[!a$idVisit %in% bad.visits,] #remove visits with incomplete actions
 rm(a.nb.visits,av.nb.visits,bad.visits)
 
 #discard visits with incomplete actions:
-d <- setNames(aggregate(a$idVisit,by=list(a$idVisit,a$step),FUN=length),
+D <- setNames(aggregate(a$idVisit,by=list(a$idVisit,a$step),FUN=length),
               c("idVisit","step","x"))
-bad.visits <- unique(d[d$x<max(d$x),]$idVisit)
+bad.visits <- unique(D[D$x<max(D$x),]$idVisit)
 v[v$idVisit %in% bad.visits,]$bad <- T
 a <- a[!a$idVisit %in% bad.visits,]
-rm(bad.actions,bad.visits)
+rm(bad.actions,bad.visits,D)
 
 #convert generationTime to numeric
 t <- a[a$field=="generationTime",]$value
