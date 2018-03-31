@@ -69,7 +69,7 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, 
     for (method in methods)
       for (day in days) {
         day <- as.character(as.Date(day,origin="1970-01-01"))
-        print(day)
+        print(paste0("process ",day))
         getData(date=day,
                 object=module, method=method,
                 filter_limit=filter_limit,
@@ -83,7 +83,7 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, 
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode, idVisit) {
   
-  print("***enter getData")
+  # print("***enter getData")
   
   if (object=="" | method=="") return(-1)
   if (missing(filter_limit)) filter_limit <- "-1"
@@ -92,8 +92,8 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
   if (missing(idVisit)) idVisit <- NULL
   if (missing(date)) date <- NULL
   
-  print(object)
-  print(method)
+  # print(object)
+  # print(method)
   
   #update only empty dataset for the period
   if (object=="Live" & method=="getLastVisitsDetails")
@@ -137,8 +137,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         d[[module]][[methodSub]] <<- data.frame(
           matrix(vector(),0,length(c_visits),dimnames=list(c(),c_visits)),
           stringsAsFactors=F)
-      print("getLastVisitsDetails:Visits")
-      print(paste0(nrow(d[[module]][[methodSub]])," ","visits"))
+      # print("getLastVisitsDetails:Visits")
       
       if (updatemode | appendmode) {
         d[[module]][[methodSub]] <<- d[[module]][[methodSub]][d[[module]][[methodSub]]$date!=date |
@@ -193,6 +192,9 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         row.names(d[[module]][[methodSub]]) <<- 1:nrow(d[[module]][[methodSub]])
         
       }
+      
+      print(paste0(nrow(df)," ","visits collected"))
+      print(paste0(nrow(d[[module]][[methodSub]])," ","total visits stored"))
     
   } #getData_Live_getLastVisitsDetails
   
@@ -226,7 +228,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                paste0("hideColumns=",hideColumns),
                sep="&")
     
-    print(paste("exec API for",object,method,sep=" "))
+    print(paste("exec API for",object,method,date,sep=" "))
     
     if (object=="Live" & method=="getLastVisitsDetails") {
       # read data in several calls for individual visits (heavy)
@@ -351,7 +353,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     }    
   }
   
-  print("***out getData")
+  # print("***out getData")
 }
 
 

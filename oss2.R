@@ -37,13 +37,10 @@ setSharedVar <- function() {
     #Actions.getPageUrl, Actions.getPageTitle, Actions.getDownload, Actions.getOutlink : to study
     #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : issue related to enconding (fix result to check)
   }
-  
-  v <<- d[["Live"]][["getLastVisitsDetails:Visits"]]
-  a <<- d[["Live"]][["getLastVisitsDetails:Actions"]]
 
 } #setSharedVar
 
-setSharedVar()
+setSharedVar
 
 #countries ref:
 if (!exists("refCountry") & file.exists(fCountrySrc)) {
@@ -70,23 +67,45 @@ source("src/data.R")
 
 #update data:
 from.def <- as.Date(tail(sort(unique(v$serverDate)),1))+1
-to.def <- Sys.Date()-1
+to.def <- min(from.def+6,Sys.Date()-1)
+print(paste0("last individual data collected: ",from.def-1))
 from <- readline(paste0("collect from (enter yyyy-mm-dd date, default ",from.def,"): "))
 if (from=="") from <- from.def
-to <- readline(paste0("collect to (enter yyyy-mm-dd date, default yesterday ",to.def,"): "))
+to <- readline(paste0("collect to (enter yyyy-mm-dd date, default ",to.def,"): "))
 if (to=="") to <- to.def
-collectData(from, to, -1, updatemode=T, appendmode=F, visits=T, visitsonly=T)
-rm(from,to)
+collect.scope <- readline(paste0("collect aggregated data only (1), individual data only (2) or both (3), default both: "))
+if (collect.scope=="") collect.scope <- "3"
+if (collect.scope=="1") {
+  visits <- F
+  visitsonly <- T
+} else if (collect.scope=="2") {
+  visits <- T
+  visitsonly <- T
+} else if (collect.scope=="3") {
+  visits <- T
+  visitsonly <- F
+}
+print(paste0("start to collect data from ",from," to ",to))
+print(paste0("aggregated data *",ifelse(visitsonly,"no","yes"),
+             "*, individual data *",ifelse(visits,"yes","no"),
+             "*"))
+collectData(from, to, -1, updatemode=T, appendmode=F, visits=visits, visitsonly=visitsonly)
+print("data collected")
+rm(from,to,from.def,to.def,visits,visitsonly)
 #getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
 # getData(NULL,"Live","getLastVisitsDetails", updatemode=T, appendmode=F, filter_limit=-1,idVisit=211684)
 
 # store updated data
-u <- toupper(readline("save updated data and replace previous one? ('y' or 'Y' to agree, default no) "))
-if (u=="Y") {
+u <- toupper(readline("save updated data and replace previous one? ('y' or 'Y' to agree, default yes) "))
+if (u %in% c("Y","")) {
   save(d, file=fdata)
   print("updated data saved")
 } else
   print("updated data not saved!")
 rm(u)
+
+#enjoy
+v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
+a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
 
 
