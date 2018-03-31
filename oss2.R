@@ -66,7 +66,7 @@ if (!exists("codeData") & file.exists(fcodeData)) {
 source("src/data.R")
 
 #update data:
-collectData <- function() {
+collect <- function() {
   
   from.def <- as.Date(tail(sort(unique(v$serverDate)),1))+1
   to.def <- min(from.def+6,Sys.Date()-1)
@@ -78,22 +78,22 @@ collectData <- function() {
   collect.scope <- readline(paste0("collect aggregated data only (1), individual data only (2) or both (3), default both: "))
   if (collect.scope=="") collect.scope <- "3"
   if (collect.scope=="1") {
-    visits <- F
-    visitsonly <- T
+    V <- F
+    VO <- F
   } else if (collect.scope=="2") {
-    visits <- T
-    visitsonly <- T
+    V <- T
+    VO <- T
   } else if (collect.scope=="3") {
-    visits <- T
-    visitsonly <- F
+    V <- T
+    VO <- F
   }
   print(paste0("start to collect data from ",from," to ",to))
-  print(paste0("aggregated data *",ifelse(visitsonly,"no","yes"),
-               "*, individual data *",ifelse(visits,"yes","no"),
+  print(paste0("aggregated data *",ifelse(VO,"no","yes"),
+               "*, individual data *",ifelse(V,"yes","no"),
                "*"))
-  collectData(from, to, -1, updatemode=T, appendmode=F, visits=visits, visitsonly=visitsonly)
+  collectData(from=from, to=to, filter_limit=-1, updatemode=T, appendmode=F, visits=V, visitsonly=VO)
   print("data collected")
-  rm(from,to,from.def,to.def,visits,visitsonly)
+  rm(from,to,from.def,to.def,V,VO,collect.scope)
   #getData("2017-05-29","Live","getLastVisitsDetails", updatemode=T, appendmode=T, filter_limit=-1)
   # getData(NULL,"Live","getLastVisitsDetails", updatemode=T, appendmode=F, filter_limit=-1,idVisit=211684)
   
@@ -106,9 +106,9 @@ collectData <- function() {
     print("updated data not saved!")
   rm(u)
   
-} #collectData
+} #collect
 
-collectData()
+collect()
 
 #enjoy
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]

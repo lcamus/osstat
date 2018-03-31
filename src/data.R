@@ -66,24 +66,24 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, 
       methods <- sapply(names(d[[module]]),function(x) gsub("^.*:.*$","",x))
     else
       methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)})) 
-    for (method in methods)
+    # for (method in methods)
       for (day in days) {
         day <- as.character(as.Date(day,origin="1970-01-01"))
-        print(paste0("process ",day))
-        getData(date=day,
-                object=module, method=method,
-                filter_limit=filter_limit,
-                updatemode=updatemode, appendmode=appendmode) 
+        print(paste0("process ",day,":"))
+        for (method in methods)
+          getData(date=day,
+                  object=module, method=method,
+                  filter_limit=filter_limit,
+                  updatemode=updatemode, appendmode=appendmode) 
       }
   }
   
-  save(d, file=fdata)
+  cat(paste("\n",nrow(d[["Live"]][["getLastVisitsDetails:Visits"]]),"total visits stored\n\n"))
+  # save(d, file=fdata)
   
 }
 
 getData <- function(date, object, method, hideColumns, period, filter_limit, updatemode, appendmode, idVisit) {
-  
-  # print("***enter getData")
   
   if (object=="" | method=="") return(-1)
   if (missing(filter_limit)) filter_limit <- "-1"
@@ -183,18 +183,12 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
         
         #append data in final structure
         d[[module]][[methodSub]] <<- rbind(d[[module]][[methodSub]],df_a)
-        # attach(d[[module]][[methodSub]])
-        # d[[module]][[methodSub]] <<- d[[module]][[methodSub]][order(idVisit,step),]
         d[[module]][[methodSub]] <<-
           d[[module]][[methodSub]][order(d[[module]][[methodSub]]$idVisit,
                                          d[[module]][[methodSub]]$step),]
-        # detach(d[[module]][[methodSub]])
         row.names(d[[module]][[methodSub]]) <<- 1:nrow(d[[module]][[methodSub]])
         
       }
-      
-      print(paste0(nrow(df)," ","visits collected"))
-      print(paste0(nrow(d[[module]][[methodSub]])," ","total visits stored"))
     
   } #getData_Live_getLastVisitsDetails
   
@@ -228,7 +222,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                paste0("hideColumns=",hideColumns),
                sep="&")
     
-    print(paste("exec API for",object,method,date,sep=" "))
+    print(paste0("exec API ",object,":",method))
     
     if (object=="Live" & method=="getLastVisitsDetails") {
       # read data in several calls for individual visits (heavy)
@@ -240,9 +234,12 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                     "visitServerHour%3E=10;visitServerHour%3C15",
                     "visitServerHour%3E=15;visitServerHour%3C20",
                     "visitServerHour%3E=20")
+      print("visits collected:")
       l <- lapply(breaks,function(x) {
+        cat(URLdecode(sub(";"," & ",gsub("visitServerHour","",x))),"h : ")
         ou <- url(description=paste0(u,"&segment=",x),encoding="UTF-16")
         res <- readLines(ou, warn=F)
+        cat(paste(length(res),"\t"))
         close(ou)
         return(res)
         })
@@ -353,8 +350,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
     }    
   }
   
-  # print("***out getData")
-}
+} #getData
 
 
 
