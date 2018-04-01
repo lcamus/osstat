@@ -24,18 +24,21 @@ a <- a[a$field!="pageTitle",]
 a <- a[a$field!="timeSpentPretty",]
 a <- a[a$field!="serverTimePretty",]
 a <- a[a$field!="pageId",]
-
+a <- a[a$field!="generationTime",]
+a <- a[a$field!="siteSearchKeyword",]
+ 
 #remove duplicate rows:
 dupl.rows <- duplicated(a)
 print(paste("remove",length(dupl.rows),"duplicated rows in actions dataset, related to",
             length(unique(a[dupl.rows,]$idVisit)),"visits"))
 a <- unique(a)
+rm(dupl.rows)
 
 #discard fake actions:
 a$step <- as.numeric(a$step)+1
 a <- merge(x = a, y = v[,c("idVisit","actions")], by = "idVisit", all.x = TRUE)
 aa <- a[a$step<=a$actions,]
-print(paste("discard",nrow(aa),"fake actions"))
+print(paste("discard",nrow(a)-nrow(aa),"fake actions"))
 a <- aa
 a$actions<-NULL
 rm(aa)
@@ -46,18 +49,21 @@ D <- setNames(aggregate(a$idVisit,by=list(a$idVisit,a$step),FUN=length),
 DD <- setNames(aggregate(D$idVisit,by=list(D$idVisit,D$x),function(z) max(z)-min(z)),
               c("idVisit","x","y"))
 bad.visits <- DD[DD$y>0,]$idVisit
-v[v$idVisit %in% bad.visits,]$bad <- T
-a <- a[!a$idVisit %in% bad.visits,]
-print(paste(length(v[v$bad,])," visits flagged as incomplete"))
+v$bad <- F
+if (length(bad.visits)>0) {
+  v[v$idVisit %in% bad.visits,]$bad <- T
+  a <- a[!a$idVisit %in% bad.visits,]
+}
+print(paste(length(bad.visits),"visits flagged as incomplete"))
 rm(bad.visits,D,DD)
 
 #convert generationTime to numeric
-t <- a[a$field=="generationTime",]$value
-t.s <- suppressWarnings(as.numeric(sub(".*?([0-9,\\.]+)s$","\\1",t)))
-t.m <- suppressWarnings(as.numeric(sub("^([0-9,\\.]+)\\smin.+$","\\1",t)))
-t.tot.s <- apply(cbind(t.m*60, t.s), 1, function(x) ifelse(all(is.na(x)), NA, sum(x, na.rm=T)))
-a[a$field=="generationTime",]$value <- t.tot.s
-rm(t.tot.s,t.s,t.m,t)
+# t <- a[a$field=="generationTime",]$value
+# t.s <- suppressWarnings(as.numeric(sub(".*?([0-9,\\.]+)s$","\\1",t)))
+# t.m <- suppressWarnings(as.numeric(sub("^([0-9,\\.]+)\\smin.+$","\\1",t)))
+# t.tot.s <- apply(cbind(t.m*60, t.s), 1, function(x) ifelse(all(is.na(x)), NA, sum(x, na.rm=T)))
+# a[a$field=="generationTime",]$value <- t.tot.s
+# rm(t.tot.s,t.s,t.m,t)
 
 #estimate timeSpent on last action:
 
@@ -123,46 +129,19 @@ altTimeSpent <- function(func) {
   
 }
 
-mm <- c("mean","last","randmean","randmedian","slr","harmonize")
-# mm <- c("slr")
+# mm <- c("mean","last","randmean","randmedian","slr","harmonize")
+mm <- c("harmonize")
 for (m in mm) {
   print(m)
   a <- altTimeSpent(m)
 }
 rm(mm)
 
-#export data to files:
+a[a$field=="timeSpent" & a$value!=a$timeSpent.harmonize,]$value <-
+  a[a$field=="timeSpent" & a$value!=a$timeSpent.harmonize,]$timeSpent.harmonize
+a$timeSpent.harmonize <- NULL
 
-pat.5 <- "^2017-05.+$"
-pat.3.4 <- "^2017-0[3,4].+$"
-pat.3.4.5 <- "^2017-0[3,4,5].+$"
-
-  #visits non detailed:
-
-v.f <- c("idVisit","visitorType","visitorId","visitIp","visitDurationPretty","visitCount","serverTimePretty","referrerType","referrerName","date","country","actions","browser","browserCode","browserFamily","browserFamilyDescription","browserName","browserVersion","city","continent","continentCode","countryCode","daysSinceFirstVisit","daysSinceLastVisit","deviceBrand","deviceModel","deviceType","firstActionTimestamp","language","languageCode","lastActionDateTime","lastActionTimestamp","latitude","location","longitude","operatingSystem","operatingSystemCode","operatingSystemName","operatingSystemVersion","plugins","referrerKeyword","referrerKeywordPosition","referrerSearchEngineUrl","referrerTypeName","referrerUrl","region","regionCode","resolution","searches","serverDate","serverDatePretty","serverDatePrettyFirstAction","serverTimePrettyFirstAction","serverTimestamp","visitDuration","visitLocalHour","visitLocalTime","visitServerHour","bad")
-
-v.file.pref <- "ourstatistics_visits-individual_2017-"
-v.5 <- grepl(pat.5,v$date)
-v.3.4 <- grepl(pat.3.4,v$date)
-v.3.4.5 <- grepl(pat.3.4.5,v$date)
-
-write.csv(v[v.3.4.5,v.f],paste0(v.file.pref,"03-04-05.csv"),row.names=F)
-write.csv(v[v.3.4,v.f],paste0(v.file.pref,"03-04.csv"),row.names=F)
-write.csv(v[v.5,v.f],paste0(v.file.pref,"05.csv"),row.names=F)
-
-rm(v.f,v.5,v.3.4,v.3.4.5,v.file.pref)
-
-  #actions:
-
-a.file.pref <- "ourstatistics_actions-individual_2017-"
-a.5 <- grepl(pat.5,a$date)
-a.3.4 <- grepl(pat.3.4,a$date)
-a.3.4.5 <- grepl(pat.3.4.5,a$date)
-
-write.csv(a[a.3.4.5,],paste0(a.file.pref,"03-04-05.csv"),row.names=F)
-write.csv(a[a.3.4,],paste0(a.file.pref,"03-04.csv"),row.names=F)
-write.csv(a[a.5,],paste0(a.file.pref,"05.csv"),row.names=F)
-
-rm(a.5,a.3.4,a.3.4.5,a.file.pref,pat.5,pat.3.4,pat.3.4.5)
+#export data:
+save(v,a,file="os-visits+actions.RData")
 
 #end
