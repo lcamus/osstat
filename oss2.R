@@ -88,7 +88,10 @@ collect <- function() {
     VO <- F
   }
   modulescope <- readline(paste0("all analytical modules (default) or some (enter modules names separated by space)): "))
-  modulescope <- unlist(strsplit(modulescope," "))
+  if (modulescope=="")
+    modulescope <- NULL
+  else
+    modulescope <- unlist(strsplit(modulescope," "))
   print(paste0("start to collect data from ",from," to ",to))
   print(paste0("aggregated data *",ifelse(VO,"no","yes"),
                "*, individual data *",ifelse(V,"yes","no"),

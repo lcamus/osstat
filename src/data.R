@@ -54,32 +54,35 @@ collectData <- function(from, to, filter_limit, updatemode, appendmode, visits, 
   if (missing(modulescope)) modulescope <- NULL
   
   days <- seq(from=as.Date(from), to=as.Date(to), by='days')
-  
+
   if (visitsonly & visits) #only individual data
     scope <- "Live"
-  else if (!visits) #only aggregated data
-    scope <- ifelse(is.null(modulescope),
-                    names(d)[names(d) != "Live"],
-                    modulescope)
-  else #all data (individual & aggregated)
-    scope <- ifelse(is.null(modulescope),
-                    names(d),
-                    modulescope)
-  
+  else if (!visits) { #only aggregated data
+    if (is.null(modulescope))
+      scope <- names(d)[names(d) != "Live"]
+    else
+      scope <- modulescope
+  }
+  else { #all data (individual & aggregated)
+    if (is.null(modulescope))
+      scope <- names(d)
+    else
+      scope <- modulescope
+  }
   for (module in scope) {
     if (!visits)
       methods <- sapply(names(d[[module]]),function(x) gsub("^.*:.*$","",x))
     else
       methods <- unique(sapply(names(d[[module]]),function(x){gsub(":[a-zA-Z]+$","",x)})) 
     # for (method in methods)
-      for (day in days) {
-        day <- as.character(as.Date(day,origin="1970-01-01"))
-        print(paste0("process ",day,":"))
-        for (method in methods)
-          getData(date=day,
-                  object=module, method=method,
-                  filter_limit=filter_limit,
-                  updatemode=updatemode, appendmode=appendmode) 
+    for (day in days) {
+      day <- as.character(as.Date(day,origin="1970-01-01"))
+      print(paste0("process ",day,":"))
+      for (method in methods)
+        getData(date=day,
+                object=module, method=method,
+                filter_limit=filter_limit,
+                updatemode=updatemode, appendmode=appendmode) 
       }
   }
   
@@ -228,6 +231,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
                sep="&")
     
     print(paste0("exec API ",object,":",method))
+    # print(u)
     
     if (object=="Live" & method=="getLastVisitsDetails") {
       # read data in several calls for individual visits (heavy)
@@ -307,17 +311,27 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       d[[object]][[method]] <<- rbind(d[[object]][[method]],cc)
       print(paste0("*** alert: ",n," column(s) missing (compensated with NA column(s))"))
       # data requested has new columns :
-    } else if (nrow(d[[object]][[method]])!=0 & ncol(d[[object]][[method]])<ncol(data)) {
+    # } else if (nrow(d[[object]][[method]])!=0 & ncol(d[[object]][[method]])<ncol(data)) {
+    } else if (nrow(d[[object]][[method]])!=0 & length(setdiff(names(data),names(d[[object]][[method]])))>0) {
       print("*** alert: new columns detected")
-      newcol <- which(names(data) != names(d[[object]][[method]]))
-      lapply(newcol,function(x) {
+      # newcol <- which(names(data) != names(d[[object]][[method]]))
+      newcols <- setdiff(names(data),names(d[[object]][[method]]))
+      print(newcols)
+      # print(names(d[[object]][[method]]))
+      # print(names(data))
+      lapply(newcols,function(x) {
         d[[object]][[method]][,c(x)] <<- ""
-        d[[object]][[method]] <<- setNames(d[[object]][[method]],
-                                           c(head(names(d[[object]][[method]]),-1),
-                                             names(data)[x]))
-        print(paste("*** variable",names(data)[x],"created"))
+        # d[[object]][[method]] <<- setNames(d[[object]][[method]],
+        #                                    c(head(names(d[[object]][[method]]),-1),
+        #                                      names(data)[x]))
+        # print(paste("*** variable",names(data)[x],"created"))
+        print(paste("*** new variable",x,"created"))
       })
-      rm(newcol)
+      # print(names(d[[object]][[method]]))
+      # browser()
+      d[[object]][[method]] <<- d[[object]][[method]][,names(data)]
+      d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
+      rm(newcols)
       # otherwise (ok) :
     } else
       d[[object]][[method]] <<- rbind(d[[object]][[method]],data)
