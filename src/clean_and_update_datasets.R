@@ -1,16 +1,24 @@
 
 #get data
-load("data/d.RData")
+# load("data/d.RData")
 
 #get visits:
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
-v$idVisit <- as.numeric(levels(v$idVisit))[v$idVisit]
-v$actions <- as.numeric(levels(v$actions))[v$actions]
+v$idVisit <- as.numeric(v$idVisit)
+v$actions <- as.numeric(v$actions)
 
 #get actions:
 a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
 
-#remove useless variables:
+#remove useless variables for visits dataset:
+var.useless <- sapply(names(v), function(x) length(unique(v[,c(x)])))
+var.useless <- var.useless[var.useless==1]
+cat(paste("discard following variables in visits dataset:\n",paste(names(var.useless),collapse=", ")))
+cat("\n")
+v[,names(var.useless)] <- NULL
+rm(var.useless)
+
+#remove useless variables for actions dataset:
 a <- a[a$field!="icon",]
 a <- a[a$field!="pageTitle",]
 a <- a[a$field!="timeSpentPretty",]
@@ -18,6 +26,9 @@ a <- a[a$field!="serverTimePretty",]
 a <- a[a$field!="pageId",]
 
 #remove duplicate rows:
+dupl.rows <- duplicated(a)
+print(paste("remove",length(dupl.rows),"duplicated rows in actions dataset, related to",
+            length(unique(a[dupl.rows,]$idVisit)),"visits"))
 a <- unique(a)
 
 #discard incomplete visits:
@@ -39,7 +50,7 @@ D <- setNames(aggregate(a$idVisit,by=list(a$idVisit,a$step),FUN=length),
 bad.visits <- unique(D[D$x<max(D$x),]$idVisit)
 v[v$idVisit %in% bad.visits,]$bad <- T
 a <- a[!a$idVisit %in% bad.visits,]
-rm(bad.actions,bad.visits,D)
+# rm(bad.visits,D)
 
 #convert generationTime to numeric
 t <- a[a$field=="generationTime",]$value

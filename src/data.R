@@ -316,7 +316,7 @@ getData <- function(date, object, method, hideColumns, period, filter_limit, upd
       print("*** alert: new columns detected")
       # newcol <- which(names(data) != names(d[[object]][[method]]))
       newcols <- setdiff(names(data),names(d[[object]][[method]]))
-      print(newcols)
+      # print(newcols)
       # print(names(d[[object]][[method]]))
       # print(names(data))
       lapply(newcols,function(x) {
