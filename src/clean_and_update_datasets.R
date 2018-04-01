@@ -31,26 +31,25 @@ print(paste("remove",length(dupl.rows),"duplicated rows in actions dataset, rela
             length(unique(a[dupl.rows,]$idVisit)),"visits"))
 a <- unique(a)
 
-#discard incomplete visits:
-a$step <- as.numeric(a$step)
-a.nb.visits <- setNames(aggregate(a$step,by=list(a$idVisit),function(x) max(x)+1),
-                        c("idVisit","actions"))
-av.nb.visits <- merge(x=v[,c("idVisit","actions")],y=a.nb.visits,by="idVisit")
-av.nb.visits$bad <- F
-av.nb.visits[av.nb.visits$actions.x!=av.nb.visits$actions.y,]$bad <- T
-v$bad <- F
-bad.visits <- av.nb.visits[av.nb.visits$bad,]$idVisit
-v[v$idVisit %in% bad.visits,]$bad <- T
-a <- a[!a$idVisit %in% bad.visits,] #remove visits with incomplete actions
-rm(a.nb.visits,av.nb.visits,bad.visits)
+#discard fake actions:
+a$step <- as.numeric(a$step)+1
+a <- merge(x = a, y = v[,c("idVisit","actions")], by = "idVisit", all.x = TRUE)
+aa <- a[a$step<=a$actions,]
+print(paste("discard",nrow(aa),"fake actions"))
+a <- aa
+a$actions<-NULL
+rm(aa)
 
-#discard visits with incomplete actions:
+#flag visits with incomplete actions:
 D <- setNames(aggregate(a$idVisit,by=list(a$idVisit,a$step),FUN=length),
               c("idVisit","step","x"))
-bad.visits <- unique(D[D$x<max(D$x),]$idVisit)
+DD <- setNames(aggregate(D$idVisit,by=list(D$idVisit,D$x),function(z) max(z)-min(z)),
+              c("idVisit","x","y"))
+bad.visits <- DD[DD$y>0,]$idVisit
 v[v$idVisit %in% bad.visits,]$bad <- T
 a <- a[!a$idVisit %in% bad.visits,]
-# rm(bad.visits,D)
+print(paste(length(v[v$bad,])," visits flagged as incomplete"))
+rm(bad.visits,D,DD)
 
 #convert generationTime to numeric
 t <- a[a$field=="generationTime",]$value
