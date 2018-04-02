@@ -17,3 +17,23 @@ pr <- pr[with(pr,order(-n)),]
 pr <- pr %>% mutate(page=lapply(strsplit(url,"\\?"),`[`,1))
 pr <- pr %>% mutate(args=lapply(strsplit(url,"\\?"),`[`,2))
 head(lapply(x, `[`, 2))
+
+#sort by trafic:
+pr$page <- as.character(pr$page)
+pr <- pr %>% group_by(page) %>% mutate(n.sum=sum(n))
+pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","page","args","url")]
+
+#split url-args:
+#prepare:
+pr$args <- as.character(pr$args)
+pr <- pr %>% mutate(arg=lapply(strsplit(args,"&"),sort))
+#split the args list:
+max.arg <- max(unlist(lapply(pr$arg,length)))
+for (arg.i in 1:max.arg) {
+  varname <- paste0("arg.",arg.i)
+  pr <- pr %>% mutate(!!varname := lapply(arg,`[`,arg.i))
+}
+#split each arg as name-value:
+# for (arg.i in ncol(pr)-max.arg+1:ncol(pr))
+#   pr <- pr %>% mutate(arg=lapply(strsplit(args,"="),sort))
+
