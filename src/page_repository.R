@@ -31,9 +31,9 @@ pr <- pr %>% mutate(arg=lapply(strsplit(args,"&"),sort))
 max.arg <- max(unlist(lapply(pr$arg,length)))
 for (arg.i in 1:max.arg) {
   varname <- paste0("arg.",arg.i)
-  pr <- pr %>% mutate(!!varname := lapply(arg,`[`,arg.i))
+  pr <- pr %>% mutate(!!varname := sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")))
 }
 #split each arg as name-value:
 # for (arg.i in ncol(pr)-max.arg+1:ncol(pr))
-#   pr <- pr %>% mutate(arg=lapply(strsplit(args,"="),sort))
+# #   pr <- pr %>% mutate(arg=lapply(strsplit(args,"="),sort))
 
