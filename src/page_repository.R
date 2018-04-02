@@ -16,7 +16,6 @@ pr <- pr[with(pr,order(-n)),]
 #split the url:
 pr <- pr %>% mutate(page=lapply(strsplit(url,"\\?"),`[`,1))
 pr <- pr %>% mutate(args=lapply(strsplit(url,"\\?"),`[`,2))
-# head(lapply(x, `[`, 2))
 
 #sort by trafic:
 pr$page <- as.character(pr$page)
@@ -25,8 +24,16 @@ pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","page","args","u
 
 #split url-args:
 #prepare:
+require(stringr)
 pr$args <- as.character(pr$args)
-# pr <- pr %>% mutate(arg=lapply(strsplit(args,"&"),sort))
+# args.cat <- as.character(na.omit(unique(str_match(pr$args,"(\\w+)(?==)"))[,1]))
+args.cat <- unique(unlist(lapply(sapply(strsplit(pr$args,"&"),function(x) strsplit(x,"=")),function(x)lapply(x,`[[`,1))))
+args.cat <- as.character(na.omit(args.cat))
+# args.df <- as.data.frame(lapply(args.cat,function(x) grepl(x,pr$args)),
+#                          col.names=args.cat)
+args.df <- lapply(args.cat,function(x) str_match(pr$args,paste0(x,"=(\\w+)")))
+args.df <- as.data.frame(lapply(args.df,function(x) x[,2]),col.names=args.cat)
+
 pr <- pr %>% mutate(arg=strsplit(args,"&"))
 #split the args list:
 max.arg <- max(unlist(lapply(pr$arg,length)))
