@@ -34,10 +34,16 @@ for (arg.i in 1:max.arg) {
   varname.val <- paste0("arg.",arg.i,".val")
   pr <- pr %>% mutate(!!varname.key := lapply(sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")),`[`,1),
                       !!varname.val := lapply(sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")),`[`,2))
-  # varname <- paste0("arg.",arg.i)
-  # pr <- pr %>% mutate(!!varname := sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")))
 }
-#split each arg as name-value:
-# for (arg.i in ncol(pr)-max.arg+1:ncol(pr))
-# #   pr <- pr %>% mutate(arg=lapply(strsplit(args,"="),sort))
+pr$arg <- NULL
 
+#transpose the args as variables:
+#protect original variables in the dataframe whose name is also used as query args name:  
+pr <- setNames(pr,replace(names(pr),names(pr) %in% c("page","url"),c("original.page","original.u")))
+pr <- as.data.frame(pr)
+# for (arg.i in grep("^arg\\.[0-9]+\\.key$",names(pr))) {
+for (arg.i in 1:max.arg) {
+  pos.i <- match(paste("arg",arg.i,"key",sep="."),names(pr))
+  pr <- spread(pr,pos.i,pos.i+1)
+}
+  
