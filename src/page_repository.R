@@ -26,7 +26,8 @@ pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","page","args","u
 #split url-args:
 #prepare:
 pr$args <- as.character(pr$args)
-pr <- pr %>% mutate(arg=lapply(strsplit(args,"&"),sort))
+# pr <- pr %>% mutate(arg=lapply(strsplit(args,"&"),sort))
+pr <- pr %>% mutate(arg=strsplit(args,"&"))
 #split the args list:
 max.arg <- max(unlist(lapply(pr$arg,length)))
 for (arg.i in 1:max.arg) {
@@ -39,7 +40,7 @@ pr$arg <- NULL
 
 #transpose the args as variables:
 #protect original variables in the dataframe whose name is also used as query args name:  
-pr <- setNames(pr,replace(names(pr),names(pr) %in% c("page","url"),c("original.page","original.u")))
+pr <- setNames(pr,replace(names(pr),names(pr) %in% c("page","url"),c("original.page","original.url")))
 pr <- as.data.frame(pr)
 # for (arg.i in grep("^arg\\.[0-9]+\\.key$",names(pr))) {
 for (arg.i in 1:max.arg) {
