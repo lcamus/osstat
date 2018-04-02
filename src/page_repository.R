@@ -16,7 +16,7 @@ pr <- pr[with(pr,order(-n)),]
 #split the url:
 pr <- pr %>% mutate(page=lapply(strsplit(url,"\\?"),`[`,1))
 pr <- pr %>% mutate(args=lapply(strsplit(url,"\\?"),`[`,2))
-head(lapply(x, `[`, 2))
+# head(lapply(x, `[`, 2))
 
 #sort by trafic:
 pr$page <- as.character(pr$page)
@@ -30,8 +30,12 @@ pr <- pr %>% mutate(arg=lapply(strsplit(args,"&"),sort))
 #split the args list:
 max.arg <- max(unlist(lapply(pr$arg,length)))
 for (arg.i in 1:max.arg) {
-  varname <- paste0("arg.",arg.i)
-  pr <- pr %>% mutate(!!varname := sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")))
+  varname.key <- paste0("arg.",arg.i,".key")
+  varname.val <- paste0("arg.",arg.i,".val")
+  pr <- pr %>% mutate(!!varname.key := lapply(sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")),`[`,1),
+                      !!varname.val := lapply(sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")),`[`,2))
+  # varname <- paste0("arg.",arg.i)
+  # pr <- pr %>% mutate(!!varname := sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")))
 }
 #split each arg as name-value:
 # for (arg.i in ncol(pr)-max.arg+1:ncol(pr))
