@@ -14,6 +14,7 @@ pr <- unique(pr)
 pr <- pr[with(pr,order(-n)),]
 
 #split the url:
+pr$url <- gsub(" ","",pr$url) #clean-up
 pr <- pr %>% mutate(page=lapply(strsplit(url,"\\?"),`[`,1))
 pr <- pr %>% mutate(args=lapply(strsplit(url,"\\?"),`[`,2))
 
@@ -29,15 +30,16 @@ pr$args <- as.character(pr$args)
 # args.cat <- as.character(na.omit(unique(str_match(pr$args,"(\\w+)(?==)"))[,1]))
 args.cat <- unique(unlist(lapply(sapply(strsplit(pr$args,"&"),function(x) strsplit(x,"=")),function(x)lapply(x,`[[`,1))))
 args.cat <- as.character(na.omit(args.cat))
-# args.df <- as.data.frame(lapply(args.cat,function(x) grepl(x,pr$args)),
-#                          col.names=args.cat)
 args.df <- lapply(args.cat,function(x) str_match(pr$args,paste0(x,"=(\\w+)")))
 args.df <- as.data.frame(lapply(args.df,function(x) x[,2]),col.names=args.cat)
-
+#...
+#sort the args according to their frequency:
+args.df <- args.df[,names(sort(sapply(args.df,function(x) sum(!is.na(x))),decreasing=T))]
+#...
 pr <- pr %>% mutate(arg=strsplit(args,"&"))
 #split the args list:
-max.arg <- max(unlist(lapply(pr$arg,length)))
-for (arg.i in 1:max.arg) {
+# max.arg <- max(unlist(lapply(pr$arg,length)))
+for (arg.i in 1:length(args.cat)) {
   varname.key <- paste0("arg.",arg.i,".key")
   varname.val <- paste0("arg.",arg.i,".val")
   pr <- pr %>% mutate(!!varname.key := lapply(sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")),`[`,1),
