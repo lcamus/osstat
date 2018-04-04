@@ -4,22 +4,12 @@ loadPackages("stringi")
 loadPackages("digest")
 
 #shared variables :
-
-setSharedVar <- function() {
+fdata <- "data/d.RData"
+if (!exists("d") & file.exists(fdata))
+  load(fdata)
   
-  fdata <<- "data/d.RData"
-  fcodeData <<- "data/codeData.RData"
-  fCountrySrc <<- "data/UserCountry_getCountryCodeMapping.csv"
-  fCountry <<- "data/refCountry.RData"
-  base <<- "https://utils.euro-area-statistics.org/admin/piwik/?module=API"
-  idSite <<- "1"
-  format <<- "CSV"
-  token_auth <<- as.character(read.table("private/token",header=F)[,])
-  
-  if (!exists("d") & file.exists(fdata)) {
-    load(fdata)
-  } else if (!exists("d")) {
-    d <<- list(UserCountry=list(getCountry=data.frame(), getContinent=data.frame(), getRegion=data.frame(), getCity=data.frame()),
+if (!exists("d"))
+    d <- list(UserCountry=list(getCountry=data.frame(), getContinent=data.frame(), getRegion=data.frame(), getCity=data.frame()),
                UserLanguage=list(getLanguage=data.frame()),
                VisitFrequency=list(get=data.frame()),
                VisitTime=list(getVisitInformationPerLocalTime=data.frame(), getVisitInformationPerServerTime=data.frame(),
@@ -36,13 +26,10 @@ setSharedVar <- function() {
     )
     #Actions.getPageUrl, Actions.getPageTitle, Actions.getDownload, Actions.getOutlink : to study
     #Actions.getPageTitles, Actions.getEntryPageTitles, Actions.getExitPageTitles : issue related to enconding (fix result to check)
-  }
-
-} #setSharedVar
-
-setSharedVar()
 
 #countries ref:
+fCountrySrc <- "data/UserCountry_getCountryCodeMapping.csv"
+fCountry <- "data/refCountry.RData"
 if (!exists("refCountry") & file.exists(fCountrySrc)) {
   refCountry <- read.table(fCountrySrc, header=T, sep=",", fileEncoding="UTF-16")
   refCountry <- as.data.frame(t(refCountry))
@@ -50,25 +37,34 @@ if (!exists("refCountry") & file.exists(fCountrySrc)) {
   refCountry <- setNames(refCountry, c("code","lib"))
   save(refCountry, file=fCountry)
 }
+rm(fCountrySrc,fCountry)
   
 #hideCol <- list(UserCountry=list(getCountry=c("nb_visits_converted"), getContinent=c("nb_visits_converted"), getRegion=c("nb_visits_converted")))
 hideCol <- list()
 fieldstoremove <- c("metadata_logo","metadata_logoWidth","metadata_logoHeight", "nb_visits_converted","pluginsIcons","conversions","revenue")  
 fieldstoremove <- c(fieldstoremove,"siteCurrency","Icon","Ecommerce")
 
+fcodeData <- "data/codeData.RData"
 if (!exists("codeData") & file.exists(fcodeData)) {
   load(fcodeData)
 } else {
   codeData <- list()
 }
+rm(fcodeData)
 
 #functions to get data:
 source("src/data.R")
 
 #update data:
+base <- "https://utils.euro-area-statistics.org/admin/piwik/?module=API"
+idSite <- "1"
+format <- "CSV"
+token_auth <- as.character(read.table("private/token",header=F)[,])
 collect <- function() {
   
+  v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
   from.def <- as.Date(tail(sort(unique(v$serverDate)),1))+1
+  rm(v)
   to.def <- min(from.def+6,Sys.Date()-1)
   print(paste0("last individual data collected: ",from.def-1))
   from <- readline(paste0("collect from (enter yyyy-mm-dd date, default ",from.def,"): "))
@@ -114,8 +110,9 @@ collect <- function() {
   rm(u)
   
 } #collect
-
 collect()
+rm(base,idSite,format,token_auth)
+rm(fdata)
 
 #enjoy
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]

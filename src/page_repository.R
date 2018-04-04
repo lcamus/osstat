@@ -1,3 +1,7 @@
+#------------------------
+#generate page repository
+#------------------------
+
 #get data
 fdata <- "~/R/osstat/data/os_ind_visits+actions_2017-10-02_2018-03-31.RData"
 load(fdata)
@@ -15,45 +19,33 @@ pr <- pr[with(pr,order(-n)),]
 
 #split the url:
 pr$url <- gsub(" ","",pr$url) #clean-up
-pr <- pr %>% mutate(page=lapply(strsplit(url,"\\?"),`[`,1))
+pr <- pr %>% mutate(pg=lapply(strsplit(url,"\\?"),`[`,1))
 pr <- pr %>% mutate(args=lapply(strsplit(url,"\\?"),`[`,2))
+pr$url <- NULL
 
 #sort by trafic:
-pr$page <- as.character(pr$page)
-pr <- pr %>% group_by(page) %>% mutate(n.sum=sum(n))
-pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","page","args","url")]
+pr$pg <- as.character(pr$pg)
+pr <- pr %>% group_by(pg) %>% mutate(n.sum=sum(n))
+pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","pg","args","url")]
 
 #split url-args:
-#prepare:
 require(stringr)
 pr$args <- as.character(pr$args)
-# args.cat <- as.character(na.omit(unique(str_match(pr$args,"(\\w+)(?==)"))[,1]))
+#args used in web requests:
 args.cat <- unique(unlist(lapply(sapply(strsplit(pr$args,"&"),function(x) strsplit(x,"=")),function(x)lapply(x,`[[`,1))))
 args.cat <- as.character(na.omit(args.cat))
 args.df <- lapply(args.cat,function(x) str_match(pr$args,paste0(x,"=(\\w+)")))
-args.df <- as.data.frame(lapply(args.df,function(x) x[,2]),col.names=args.cat)
-#...
+args.df <- as.data.frame(lapply(args.df,function(x) x[,2]),col.names=args.cat,stringsAsFactors=F)
 #sort the args according to their frequency:
 args.df <- args.df[,names(sort(sapply(args.df,function(x) sum(!is.na(x))),decreasing=T))]
-#...
-pr <- pr %>% mutate(arg=strsplit(args,"&"))
-#split the args list:
-# max.arg <- max(unlist(lapply(pr$arg,length)))
-for (arg.i in 1:length(args.cat)) {
-  varname.key <- paste0("arg.",arg.i,".key")
-  varname.val <- paste0("arg.",arg.i,".val")
-  pr <- pr %>% mutate(!!varname.key := lapply(sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")),`[`,1),
-                      !!varname.val := lapply(sapply(lapply(arg,`[`,arg.i),function(x) strsplit(x,"=")),`[`,2))
-}
-pr$arg <- NULL
+rm(args.cat)
 
-#transpose the args as variables:
-#protect original variables in the dataframe whose name is also used as query args name:  
-pr <- setNames(pr,replace(names(pr),names(pr) %in% c("page","url"),c("original.page","original.url")))
-pr <- as.data.frame(pr)
-# for (arg.i in grep("^arg\\.[0-9]+\\.key$",names(pr))) {
-for (arg.i in 1:max.arg) {
-  pos.i <- match(paste("arg",arg.i,"key",sep="."),names(pr))
-  pr <- spread(pr,pos.i,pos.i+1)
-}
-  
+#finalise dataset of page repository
+pr <- data.frame(pr,args.df,stringsAsFactors=F)
+pr$url <- NULL
+rm(args.df)
+
+#export data
+save(pr,file="os-page_repository.RData")
+
+

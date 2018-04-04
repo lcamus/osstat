@@ -57,14 +57,6 @@ if (length(bad.visits)>0) {
 print(paste(length(bad.visits),"visits flagged as incomplete"))
 rm(bad.visits,D,DD)
 
-#convert generationTime to numeric
-# t <- a[a$field=="generationTime",]$value
-# t.s <- suppressWarnings(as.numeric(sub(".*?([0-9,\\.]+)s$","\\1",t)))
-# t.m <- suppressWarnings(as.numeric(sub("^([0-9,\\.]+)\\smin.+$","\\1",t)))
-# t.tot.s <- apply(cbind(t.m*60, t.s), 1, function(x) ifelse(all(is.na(x)), NA, sum(x, na.rm=T)))
-# a[a$field=="generationTime",]$value <- t.tot.s
-# rm(t.tot.s,t.s,t.m,t)
-
 #estimate timeSpent on last action:
 
 altTimeSpent <- function(func) {
@@ -140,6 +132,11 @@ rm(mm)
 a[a$field=="timeSpent" & a$value!=a$timeSpent.harmonize,]$value <-
   a[a$field=="timeSpent" & a$value!=a$timeSpent.harmonize,]$timeSpent.harmonize
 a$timeSpent.harmonize <- NULL
+
+#finally transpose the action variables:
+require(tidyr)
+a <- spread(a,field,value)
+a <- a[,c(1:3,7,8,10,11,4:6,9)]
 
 #export data:
 save(v,a,file="os-visits+actions.RData")
