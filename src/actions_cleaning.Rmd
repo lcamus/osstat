@@ -1,0 +1,18 @@
+---
+title: "individual actions cleaning"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+
+```{r}
+colSums(is.na(a))
+```
+```{r}
+nrow(a[is.na(a$pageIdAction),])
+require(dplyr)
+x <- inner_join(a[is.na(a$pageIdAction),],v[,c("idVisit","actions")],"idVisit")
+```
+

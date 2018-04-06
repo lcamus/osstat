@@ -2,6 +2,8 @@
 #get data
 # load("data/d.RData")
 
+print("* start cleaning individual data")
+
 #get visits:
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 v$idVisit <- as.numeric(v$idVisit)
@@ -124,7 +126,7 @@ altTimeSpent <- function(func) {
 # mm <- c("mean","last","randmean","randmedian","slr","harmonize")
 mm <- c("harmonize")
 for (m in mm) {
-  print(m)
+  print(paste(m,"timeSpent"))
   a <- altTimeSpent(m)
 }
 rm(mm)
@@ -133,12 +135,22 @@ a[a$field=="timeSpent" & a$value!=a$timeSpent.harmonize,]$value <-
   a[a$field=="timeSpent" & a$value!=a$timeSpent.harmonize,]$timeSpent.harmonize
 a$timeSpent.harmonize <- NULL
 
-#finally transpose the action variables:
+#transpose the action variables:
 require(tidyr)
+print("transpose variables")
 a <- spread(a,field,value)
 a <- a[,c(1:3,7,8,10,11,4:6,9)]
 
+#set null generationTime to 1ms
+print(paste("set null generationTime to 1ms,",nrow(a[a$generationTimeMilliseconds=="",]),"visits"))
+a$generationTimeMilliseconds[a$generationTimeMilliseconds==""] <- "0"
+
 #export data:
-save(v,a,file="os-visits+actions.RData")
+f <- "os-visits+actions.RData"
+save(v,a,file=f)
+print(paste("cleaned data exported to",f))
+rm(f)
+
+print("* end cleaning individual data")
 
 #end
