@@ -31,4 +31,17 @@ v[v$idVisit %in% v.na,]$bad <- T
 print(paste(length(a.na),"last NA-actions discarded"))
 rm(a.na,v.na,actions.na)
 ```
+```{r}
+a.na <- inner_join(a[is.na(a$timeSpent),],v[,c("idVisit","actions")],"idVisit")
+a.na <- a.na[a.na$step==a.na$actions,]
+a.na$timeSpent <- "1"
+a <- left_join(a,
+               setNames(a.na[,c("idVisit","step","timeSpent")],c("idVisit","step","timeSpent.y")),
+               by=c("idVisit","step"))
+rm(a.na)
+a[is.na(a$timeSpent),]$timeSpent <- a[is.na(a$timeSpent),]$timeSpent.y
+a$timeSpent.y <- NULL
+colSums(is.na(a))
+```
+
 
