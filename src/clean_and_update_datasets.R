@@ -8,6 +8,7 @@ print("* start cleaning individual data")
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 v$idVisit <- as.numeric(v$idVisit)
 v$actions <- as.numeric(v$actions)
+if (is.null(v$fix)) v$fix <- F
 
 #get actions:
 a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
@@ -63,7 +64,7 @@ rm(bad.visits,D,DD)
 require(tidyr)
 print("transpose variables")
 a <- spread(a,field,value)
-a <- a[,c(1:3,7,8,10,11,4:6,9)]
+a <- a[,c(1:3,7,8,10,11,4:6,9,12)]
 
 #remove last visit action when NA-action:
 var.na <- names(a)[!names(a) %in% c("date","idVisit","step","type")]
@@ -78,9 +79,17 @@ a <- a[-a.na,]
 actions.na <- a[a$idVisit %in% v.na,] %>% group_by(idVisit) %>% summarise(actions.na=n())
 v <- left_join(v,actions.na,by="idVisit")
 v[!is.na(v$actions.na),]$actions <- v[!is.na(v$actions.na),]$actions.na
-v[v$idVisit %in% v.na,]$bad <- T
+v[v$idVisit %in% v.na,]$fix <- T
 print(paste(length(a.na),"last actions as NA-actions discarded"))
+v$actions.na <- NULL
 rm(a.na,v.na,actions.na)
+
+#flag visits with empty url and a single action
+url.na <- left_join(a,v[,c("idVisit","actions")],by="idVisit")
+url.na<- url.na[url.na$url=="" & url.na$type!="search" & url.na$actions==1,]
+v[v$idVisit %in% url.na$idVisit,]$bad <- T
+a <- a[!a$idVisit %in% url.na$idVisit,]
+rm(url.na)
 
 # harmonize timeSpent for last action-visit to 1ms
 require(dplyr)
@@ -102,14 +111,21 @@ a$generationTimeMilliseconds[a$generationTimeMilliseconds==""] <- "0"
 #convert to numeric:
 a$generationTimeMilliseconds <- as.numeric(a$generationTimeMilliseconds)
 #replace missing values by average:
-gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilliseconds,na.rm=T))
-a <- left_join(a,gt,by="pageIdAction")
-a[is.na(a$generationTimeMilliseconds),]$generationTimeMilliseconds <-
-  a[is.na(a$generationTimeMilliseconds),]$gt.avg
-a$gt.avg <- NULL
+a$pageIdAction <- as.numeric(a$pageIdAction)
+#---
+# gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilliseconds,na.rm=T))
+# a <- left_join(a,gt,by="pageIdAction")
+# a[is.na(a$generationTimeMilliseconds),]$generationTimeMilliseconds <-
+#   a[is.na(a$generationTimeMilliseconds),]$gt.avg
+# a$gt.avg <- NULL
+#---
 #remove pretty variable (useless for recent period):
 a$generationTime <- NULL
 rm(gt)
+
+#update page repository
+source("page_repository.R")
+a$url <- NULL #no more useful
 
 #export data:
 f <- paste0("os-visits+actions_",head(sort(a$date),1),"_",tail(sort(a$date),1),".RData")

@@ -2,16 +2,12 @@
 #generate page repository
 #------------------------
 
-#get data
-fdata <- "~/R/osstat/data/os_ind_visits+actions_2017-10-02_2018-03-31.RData"
-load(fdata)
-rm(fdata)
+# called from clean_and_update_datasets.R
 
 #create table of requested pages
 require(tidyr, dplyr)
-pr <- a[a$field %in% c("url","pageIdAction"),names(a)[!names(a) %in% c("date")]]
-pr[pr$field=="url",]$value <- sub("https://www.euro-area-statistics.org","",pr[pr$field=="url",]$value)
-pr <- spread(pr, field, value)
+pr <- a[a$type!="search",c("idVisit","step","pageIdAction","url")]
+pr$url <- sub("https://www.euro-area-statistics.org","",pr$url)
 pr <- pr[,names(pr)[!names(pr) %in% c("idVisit","step")]]
 pr <- pr %>% group_by(url) %>% mutate(n=n())
 pr <- unique(pr)
@@ -26,7 +22,7 @@ pr$url <- NULL
 #sort by trafic:
 pr$pg <- as.character(pr$pg)
 pr <- pr %>% group_by(pg) %>% mutate(n.sum=sum(n))
-pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","pg","args","url")]
+pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","pg","args")]
 
 #split url-args:
 require(stringr)
@@ -42,7 +38,7 @@ rm(args.cat)
 
 #finalise dataset of page repository
 pr <- data.frame(pr,args.df,stringsAsFactors=F)
-pr$url <- NULL
+# pr$url <- NULL
 rm(args.df)
 
 #export data
