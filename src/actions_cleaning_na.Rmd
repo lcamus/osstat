@@ -1,0 +1,34 @@
+---
+title: "individual actions cleaning"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+
+```{r}
+fdata <- "~/R/osstat/data/os_ind_visits+actions_2017-10-02_2018-04-05.RData"
+load(fdata)
+rm(fdata)
+colSums(is.na(a))
+```
+```{r}
+var.na <- names(a)[!names(a) %in% c("date","idVisit","step","type")]
+a.na <- which(!rowSums(!is.na(a[,var.na])))
+rm(var.na)
+require(dplyr)
+v.na <- inner_join(a[a.na,],v[,c("idVisit","actions")],"idVisit")
+v.na <- v.na[v.na$step==v.na$actions,]$idVisit
+#discard NA-actions:
+a <- a[-a.na,]
+colSums(is.na(a))
+#update visits:
+actions.na <- a[a$idVisit %in% v.na,] %>% group_by(idVisit) %>% summarise(actions.na=n())
+v <- left_join(v,actions.na,by="idVisit")
+v[!is.na(v$actions.na),]$actions <- v[!is.na(v$actions.na),]$actions.na
+v[v$idVisit %in% v.na,]$bad <- T
+print(paste(length(a.na),"last NA-actions discarded"))
+rm(a.na,v.na,actions.na)
+```
+

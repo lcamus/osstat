@@ -145,6 +145,23 @@ a <- a[,c(1:3,7,8,10,11,4:6,9)]
 print(paste("set null generationTime to 1ms,",nrow(a[a$generationTimeMilliseconds=="",]),"visits"))
 a$generationTimeMilliseconds[a$generationTimeMilliseconds==""] <- "0"
 
+#remove last visit action when NA-action:
+var.na <- names(a)[!names(a) %in% c("date","idVisit","step","type")]
+a.na <- which(!rowSums(!is.na(a[,var.na])))
+rm(var.na)
+require(dplyr)
+v.na <- inner_join(a[a.na,],v[,c("idVisit","actions")],"idVisit")
+v.na <- v.na[v.na$step==v.na$actions,]$idVisit
+#discard NA-actions:
+a <- a[-a.na,]
+#update visits:
+actions.na <- a[a$idVisit %in% v.na,] %>% group_by(idVisit) %>% summarise(actions.na=n())
+v <- left_join(v,actions.na,by="idVisit")
+v[!is.na(v$actions.na),]$actions <- v[!is.na(v$actions.na),]$actions.na
+v[v$idVisit %in% v.na,]$bad <- T
+print(paste(length(a.na),"last actions as NA-actions discarded"))
+rm(a.na,v.na,actions.na)
+
 #export data:
 f <- "os-visits+actions.RData"
 save(v,a,file=f)
