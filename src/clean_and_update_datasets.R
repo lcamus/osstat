@@ -106,6 +106,9 @@ a$timeSpent.y <- NULL
 print(paste("harmonize timeSpent for tail action to 1 ms, updated",nrow(a.na),"visits"))
 rm(a.na)
 
+#update page repository
+source("page_repository.R")
+
 #processed generationTime
 #set null to 1ms
 print(paste("set null generationTime to 1ms,",nrow(a[a$generationTimeMilliseconds=="",]),"visits"))
@@ -114,20 +117,15 @@ a$generationTimeMilliseconds[a$generationTimeMilliseconds==""] <- "0"
 a$generationTimeMilliseconds <- as.numeric(a$generationTimeMilliseconds)
 #replace missing values by average:
 a$pageIdAction <- as.numeric(a$pageIdAction)
-#---
-# gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilliseconds,na.rm=T))
-# a <- left_join(a,gt,by="pageIdAction")
-# a[is.na(a$generationTimeMilliseconds),]$generationTimeMilliseconds <-
-#   a[is.na(a$generationTimeMilliseconds),]$gt.avg
-# a$gt.avg <- NULL
-#---
+gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilliseconds,na.rm=T))
+a <- left_join(a,gt,by="pageIdAction")
+a[is.na(a$generationTimeMilliseconds),]$generationTimeMilliseconds <-
+  a[is.na(a$generationTimeMilliseconds),]$gt.avg
+a$gt.avg <- NULL
 #remove pretty variable (useless for recent period):
 a$generationTime <- NULL
-rm(gt)
-
-#update page repository
-source("page_repository.R")
 a$url <- NULL #no more useful
+rm(gt)
 
 #export data:
 f <- paste0("os-visits+actions_",head(sort(a$date),1),"_",tail(sort(a$date),1),".RData")
