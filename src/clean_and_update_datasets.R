@@ -1,4 +1,6 @@
 
+#clean data
+
 #get data
 # load("data/d.RData")
 

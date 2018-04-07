@@ -42,6 +42,7 @@ pr <- data.frame(pr,args.df,stringsAsFactors=F)
 rm(args.df)
 
 #export data
-save(pr,file="os-page_repository.RData")
+save(pr,file=paste0("os-page_repository_",min(as.Date(a$date)),"-",max(as.Date(a$date)),".RData"))
 
+#end
 
