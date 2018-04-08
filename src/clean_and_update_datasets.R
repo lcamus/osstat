@@ -118,6 +118,19 @@ a$generationTimeMilliseconds <- as.numeric(a$generationTimeMilliseconds)
 #replace missing values by average:
 a$pageIdAction <- as.numeric(a$pageIdAction)
 gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilliseconds,na.rm=T))
+#if only NA values for a given page-action then average at page level:
+  if (sum(is.nan(gt$gt.avg))>0) {
+    x <- left_join(pr[,c("pageIdAction","pg")],a[,c("pageIdAction","generationTimeMilliseconds")],by="pageIdAction")
+    y <- x %>% group_by(pg) %>% summarise(gt.pg.avg=mean(generationTimeMilliseconds,na.rm=T))
+    x <- left_join(pr[,c("pageIdAction","pg")],y,by="pg")
+    x <- left_join(gt[is.nan(gt$gt.avg),],x,by="pageIdAction")
+    gt <- left_join(gt,x[,c("pageIdAction","gt.pg.avg")],by="pageIdAction")
+    gt[is.nan(gt$gt.avg),]$gt.avg <- gt[is.nan(gt$gt.avg),]$gt.pg.avg
+    gt$gt.pg.avg <- NULL
+    # x <- left_join(gt[is.nan(gt$gt.avg),],pr[,c("pageIdAction","pg")],by="pageIdAction")
+    # x <- left_join(x,a[,c("pageIdAction","generationTimeMilliseconds")],by="pageIdAction")
+    # x <- x %>% group_by(pg) %>% summarise(gt.pg.avg=mean(generationTimeMilliseconds,na.rm=T))
+  }
 a <- left_join(a,gt,by="pageIdAction")
 a[is.na(a$generationTimeMilliseconds),]$generationTimeMilliseconds <-
   a[is.na(a$generationTimeMilliseconds),]$gt.avg
