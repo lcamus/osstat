@@ -19,6 +19,7 @@ a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
 var.useless <- sapply(names(v), function(x) length(unique(v[,c(x)])))
 var.useless <- var.useless[var.useless==1]
 var.useless <- c(names(var.useless),"countryFlag")
+var.useless <- var.useless[!var.useless %in% c("fix","bad")] #preserve fix and bad variables
 cat(paste("discard following variables in visits dataset:\n",paste(var.useless,collapse=", ")))
 cat("\n")
 v[,var.useless] <- NULL
@@ -107,7 +108,8 @@ print(paste("harmonize timeSpent for tail action to 1 ms, updated",nrow(a.na),"v
 rm(a.na)
 
 #update page repository
-source("page_repository.R")
+a$pageIdAction <- as.numeric(a$pageIdAction)
+source("src/page_repository.R")
 
 #processed generationTime
 #set null to 1ms
@@ -116,7 +118,6 @@ a$generationTimeMilliseconds[a$generationTimeMilliseconds==""] <- "0"
 #convert to numeric:
 a$generationTimeMilliseconds <- as.numeric(a$generationTimeMilliseconds)
 #replace missing values by average:
-a$pageIdAction <- as.numeric(a$pageIdAction)
 gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilliseconds,na.rm=T))
 #if only NA values for a given page-action then average at page level:
   if (sum(is.nan(gt$gt.avg))>0) {

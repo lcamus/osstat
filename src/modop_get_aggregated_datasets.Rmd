@@ -1,0 +1,20 @@
+---
+title: "load aggregated datasets"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r, echo=T}
+f <- "../data/os-aggregates_2017-10-02-2018-04-07.RData" #update with your personal path
+load(f)
+print("get the list of modules:")
+names(ag)
+cat("\nget the list of datasets for one module:\n")
+names(ag[["VisitTime"]])
+cat("\nget one dataset of interest and enjoy:\n")
+mydataset <- ag[["VisitTime"]][["getVisitInformationPerLocalTime"]]
+names(mydataset)
+head(mydataset)
+```
+
