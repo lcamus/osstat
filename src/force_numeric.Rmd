@@ -6,10 +6,11 @@ editor_options:
 ---
 
 ```{r}
+load("d.RData")
 
 m <- names(d)[-match("Live",names(d))]
 to.num <- c()
-to.match <- c("nb_","max_","sum_","avg_","min_","_count","value")
+to.match <- c("nb_","max_","sum_","avg_","min_","_count(_|$)","value")
 to.exclude <- "nb_visits_percentage"
 
 l <- lapply(m,function(x)
@@ -26,8 +27,13 @@ to.num <- to.num[-to.exclude]
 to.num <- gsub("\\s1$","",to.num)
 to.num <- strsplit(to.num," ")
 
-l <- suppressWarnings(lapply(to.num,function(x)
-  dd[[x[1]]][[x[2]]][,x[3]] <<- as.numeric(dd[[x[1]]][[x[2]]][,x[3]])))
+l <- lapply(to.num,function(x)
+  d[[x[1]]][[x[2]]][,x[3]] <<- tryCatch({
+    as.numeric(dd[[x[1]]][[x[2]]][,x[3]])
+  }, warning=function(w) {
+    print(w$message)
+    print(paste(x[1],x[2],x[3]))
+  }))
 
 ```
 
