@@ -21,19 +21,29 @@ wssplot <- function(data, nc=15, seed=1234){
 ```
 
 ```{r}
-gc <- ag[["UserCountry"]][["getCountry"]]
+gc <- ag[["VisitFrequency"]][["get"]]
+rownames(gc) <- 1:nrow(gc)
+
 gc0 <- gc[,which(sapply(names(gc),function(x) is.numeric(gc[,x])))] #filter on numeric variables
-gc0 <- gc0[,which(!names(gc0) %in% "nb_users")] #useless variable
+gc0 <- gc0[,which(!names(gc0) %in% "nb_users_returning")] #useless variable
 gc0 <- scale(gc0)
-
-#clustering K-Means
-
-k <- kmeans(gc0,3) #k=3
-
-wssplot(gc0, nc=6)
-
-k <- kmeans(gc0,2) #k=2
 
 ```
 
+```{r}
+#clustering K-Means
+wssplot(gc0, nc=6)
+```
+
+```{r}
+k <- kmeans(gc0,2) #k=2
+# k <- kmeans(gc0,3) #k=3
+```
+
+```{r}
+library(cluster)
+clusplot(gc0, k$cluster, main='2D representation of the Cluster solution',
+         color=TRUE, shade=TRUE,
+         labels=2, lines=0)
+```
 
