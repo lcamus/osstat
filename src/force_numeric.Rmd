@@ -29,11 +29,13 @@ to.num <- strsplit(to.num," ")
 
 l <- lapply(to.num,function(x)
   d[[x[1]]][[x[2]]][,x[3]] <<- tryCatch({
-    as.numeric(dd[[x[1]]][[x[2]]][,x[3]])
+    as.numeric(d[[x[1]]][[x[2]]][,x[3]])
   }, warning=function(w) {
     print(w$message)
     print(paste(x[1],x[2],x[3]))
   }))
+
+rm(l,m,to.exclude,to.match,to.num)
 
 ```
 

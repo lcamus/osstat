@@ -128,9 +128,6 @@ gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilli
     gt <- left_join(gt,x[,c("pageIdAction","gt.pg.avg")],by="pageIdAction")
     gt[is.nan(gt$gt.avg),]$gt.avg <- gt[is.nan(gt$gt.avg),]$gt.pg.avg
     gt$gt.pg.avg <- NULL
-    # x <- left_join(gt[is.nan(gt$gt.avg),],pr[,c("pageIdAction","pg")],by="pageIdAction")
-    # x <- left_join(x,a[,c("pageIdAction","generationTimeMilliseconds")],by="pageIdAction")
-    # x <- x %>% group_by(pg) %>% summarise(gt.pg.avg=mean(generationTimeMilliseconds,na.rm=T))
   }
 a <- left_join(a,gt,by="pageIdAction")
 a[is.na(a$generationTimeMilliseconds),]$generationTimeMilliseconds <-
