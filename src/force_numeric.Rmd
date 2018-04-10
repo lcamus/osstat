@@ -1,0 +1,34 @@
+---
+title: "force variables from aggregated datasets to numeric"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+
+m <- names(d)[-match("Live",names(d))]
+to.num <- c()
+to.match <- c("nb_","max_","sum_","avg_","min_","_count","value")
+to.exclude <- "nb_visits_percentage"
+
+l <- lapply(m,function(x)
+  lapply(names(d[[x]]),function(y)
+    lapply(names(d[[x]][[y]]),function(z) {
+      s <- sapply(to.match,function(r) grep(r,z))
+      to.num <<- c(to.num,paste(x,y,z,s))
+    }
+  )))
+
+to.num <- to.num[grep("\\s1$",to.num)]
+to.exclude <- grep(paste0(to.exclude,"\\s1$"),to.num)
+to.num <- to.num[-to.exclude]
+to.num <- gsub("\\s1$","",to.num)
+to.num <- strsplit(to.num," ")
+
+l <- suppressWarnings(lapply(to.num,function(x)
+  dd[[x[1]]][[x[2]]][,x[3]] <<- as.numeric(dd[[x[1]]][[x[2]]][,x[3]])))
+
+```
+
+
