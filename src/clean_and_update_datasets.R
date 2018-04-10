@@ -128,6 +128,7 @@ gt <- a %>% group_by(pageIdAction) %>% summarise(gt.avg=mean(generationTimeMilli
     gt <- left_join(gt,x[,c("pageIdAction","gt.pg.avg")],by="pageIdAction")
     gt[is.nan(gt$gt.avg),]$gt.avg <- gt[is.nan(gt$gt.avg),]$gt.pg.avg
     gt$gt.pg.avg <- NULL
+    rm(x,y)
   }
 a <- left_join(a,gt,by="pageIdAction")
 a[is.na(a$generationTimeMilliseconds),]$generationTimeMilliseconds <-
@@ -139,7 +140,7 @@ a$url <- NULL #no more useful
 rm(gt)
 
 #export data:
-f <- paste0("os-visits+actions_",head(sort(a$date),1),"_",tail(sort(a$date),1),".RData")
+f <- paste0("data/os-visits+actions_",head(sort(a$date),1),"_",tail(sort(a$date),1),".RData")
 save(v,a,file=f)
 print(paste("cleaned data exported to",f))
 rm(f)

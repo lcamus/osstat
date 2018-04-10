@@ -118,4 +118,8 @@ rm(fdata)
 v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 a <- d[["Live"]][["getLastVisitsDetails:Actions"]]
 
+#cleanup
+rm(codeData,hideCol,refCountry,fieldstoremove)
+rm(collect,collectData,getData,getGID,loadPackages,setNumeric)
+
 

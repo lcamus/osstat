@@ -26,7 +26,7 @@ to.num <- gsub("\\s1$","",to.num)
 to.num <- strsplit(to.num," ")
 
 l <- lapply(to.num,function(x)
-  d[[x[1]]][[x[2]]][,x[3]] <<- tryCatch({
+  ag[[x[1]]][[x[2]]][,x[3]] <<- tryCatch({
     as.numeric(d[[x[1]]][[x[2]]][,x[3]])
   }, warning=function(w) {
     print(w$message)

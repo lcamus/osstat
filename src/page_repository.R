@@ -42,7 +42,7 @@ pr <- data.frame(pr,args.df,stringsAsFactors=F)
 rm(args.df)
 
 #export data
-f <- paste0("os-page_repository_",min(as.Date(a$date)),"-",max(as.Date(a$date)),".RData")
+f <- paste0("data/os-page_repository_",min(as.Date(a$date)),"-",max(as.Date(a$date)),".RData")
 save(pr,file=f)
 print(paste("page repository updated:",f))
 rm(f)
