@@ -6,6 +6,18 @@ if (!exists("d"))
 
 ag <- d[-match("Live",names(d))]
 
+#drop useless variables
+to.drop <- c("metadata_","nb_users")
+va <- names(unlist(ag))
+va <- unique(gsub("\\d+$","",va))
+va <- va[unlist(lapply(to.drop,function(x) grep(x,va)))]
+invisible(lapply(va,function(x){
+  y <- unlist(strsplit(x,"\\."))
+  ag[[y[1]]][[y[2]]][,y[[3]]] <<- NULL
+  }))
+print(length(va),"useless variables dropped")
+rm(va,to.drop)
+
 #convert numeric variables coded in string to numeric:
 to.num <- c()
 to.match <- c("nb_","max_","sum_","avg_","min_","_count(_|$)","value")
