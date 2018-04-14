@@ -110,12 +110,18 @@ clusplot(g0, k$cluster, main='2D representation of the Cluster solution',
 getCluster <- function(module,method,outliers,n) {
   
   g <- ag[[module]][[method]]
+  g <- na.omit(g)
   if (!is.null(outliers))
     g <- g[-outliers,] #remove outliers
   rownames(g) <- 1:nrow(g)
-  g <- g[order(g$date,g$label),]
   
-  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))] #filter on numeric variables
+  if (!is.null(g$label))
+    g <- g[order(g$date,g$label),]
+  else
+    g <- g[order(g$date),]
+ 
+  #filter on numeric variables
+  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))]
   va <- names(g0)
   g0 <- scale(g0)
   
@@ -123,6 +129,8 @@ getCluster <- function(module,method,outliers,n) {
   wssplot(g0, nc=6)
   
   k <- kmeans(g0,n)
+  
+  require(cluster)
   clusplot(g0, k$cluster, main=paste0("Clusters ",module,":",method),
            color=TRUE, shade=TRUE,
            labels=2, lines=0)
@@ -166,5 +174,147 @@ method <- "getCity"
 # outliers <- c()
 outliers <- c(919,11661,1347,6431)
 n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "UserLanguage"
+method <- "getLanguage"
+outliers <- c(2524,191,1268)
+# outliers <- c(919,11661,1347,6431)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+
+```{r}
+module <- "VisitFrequency"
+method <- "get"
+outliers <- c()
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "VisitTime"
+method <- "getVisitInformationPerLocalTime"
+outliers <- c(1042)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "VisitTime"
+method <- "getVisitInformationPerServerTime"
+outliers <- c(1045)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "VisitTime"
+method <- "getByDayOfWeek"
+outliers <- c(8,89,9)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "VisitorInterest"
+method <- "getNumberOfVisitsByVisitCount"
+outliers <- c(99,1233,113)
+n.clusters <- 2
+ag[[module]][[method]]$nb_visits_per <- as.numeric(sub("%","",ag[[module]][[method]]$nb_visits_percentage))
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "VisitsSummary"
+method <- "get"
+outliers <- c(8,89,9,44)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "get"
+outliers <- c(143)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "getPageUrls"
+outliers <- c(1498,1438,2354)
+n.clusters <- 2
+ag[[module]][[method]]$nb_hits_following_search <- NULL
+invisible(lapply(c("bounce_rate","exit_rate"),function(x)
+  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "getEntryPageUrls"
+outliers <- c(1498,1438,2354)
+n.clusters <- 2
+ag[[module]][[method]]$nb_hits_following_search <- NULL
+invisible(lapply(c("bounce_rate","exit_rate"),function(x)
+  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "getExitPageUrls"
+outliers <- c(1498,1438,2354)
+n.clusters <- 2
+ag[[module]][[method]]$nb_hits_following_search <- NULL
+invisible(lapply(c("bounce_rate","exit_rate"),function(x)
+  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "getPageTitles"
+outliers <- c(494,830)
+n.clusters <- 2
+ag[[module]][[method]]$nb_hits_following_search <- NULL
+invisible(lapply(c("bounce_rate","exit_rate"),function(x)
+  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "getEntryPageTitles"
+outliers <- c(494,830)
+n.clusters <- 2
+ag[[module]][[method]]$nb_hits_following_search <- NULL
+invisible(lapply(c("bounce_rate","exit_rate"),function(x)
+  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "getExitPageTitles"
+outliers <- c(494,830)
+n.clusters <- 2
+ag[[module]][[method]]$nb_hits_following_search <- NULL
+invisible(lapply(c("bounce_rate","exit_rate"),function(x)
+  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "Actions"
+method <- "getDownloads"
+outliers <- c(295,288,263)
+n.clusters <- 2
+ag[[module]][[method]] <- ag[[module]][[method]][,1:5]
 getCluster(module,method,outliers,n.clusters)
 ```
