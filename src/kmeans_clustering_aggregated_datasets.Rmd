@@ -11,6 +11,16 @@ if(!exists("ag")) load(f)
 rm(f)
 ```
 ```{r}
+#remove useless variables:
+va.useless <- "nb_hits_following_search"
+va <- names(unlist(ag))
+va <- unique(gsub("\\d+$","",va))
+va <- va[grep(va.useless,va)]
+invisible(lapply(strsplit(va,"\\."),function(x)
+  ag[[x[1]]][[x[2]]][,x[3]] <<- NULL))
+rm(va.useless)
+```
+```{r}
 wssplot <- function(data, nc=15, seed=1234){
   wss <- (nrow(data)-1)*sum(apply(data,2,var))
   for (i in 2:nc){
@@ -18,92 +28,6 @@ wssplot <- function(data, nc=15, seed=1234){
     wss[i] <- sum(kmeans(data, centers=i)$withinss)}
   plot(1:nc, wss, type="b", xlab="Number of Clusters",
        ylab="Within groups sum of squares")}
-```
-
-```{r}
-# module <- "VisitFrequency"
-# method <- "get"
-module <- "VisitFrequency"
-method <- "get"
-g <- ag[[module]][[method]]
-rownames(g) <- 1:nrow(g)
-
-g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))] #filter on numeric variables
-# g0 <- g0[,which(!names(g0) %in% "nb_users_returning")] #useless variable
-g0 <- scale(g0)
-
-```
-
-```{r}
-#clustering K-Means
-wssplot(g0, nc=6)
-```
-
-```{r}
-k <- kmeans(g0,2) #k=2
-# k <- kmeans(g0,3) #k=3
-```
-
-```{r}
-require(cluster)
-clusplot(g0, k$cluster, main='2D representation of the Cluster solution',
-         color=TRUE, shade=TRUE,
-         labels=2, lines=0)
-```
-
-```{r}
-g <- ag[["VisitTime"]][["getByDayOfWeek"]]
-g <- na.omit(g)
-g <- g[-c(8,9,89),] #outliers
-rownames(g) <- 1:nrow(g)
-
-g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))] #filter on numeric variables
-g0 <- g0[,which(!names(g0) %in% "nb_users")] #useless variable
-g0 <- scale(g0)
-
-```
-
-```{r}
-#clustering K-Means
-wssplot(g0, nc=6)
-```
-
-```{r}
-k <- kmeans(g0,2) #k=2
-# k <- kmeans(g0,3) #k=3
-```
-
-```{r}
-clusplot(g0, k$cluster, main='2D representation of the Cluster solution',
-         color=TRUE, shade=TRUE,
-         labels=2, lines=0)
-```
-
-```{r}
-module <- "VisitsSummary"
-method <- "get"
-g <- ag[[module]][[method]]
-g <- g[-c(8,9,89,44),] #outliers
-rownames(g) <- 1:nrow(g)
-
-g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))] #filter on numeric variables
-g0 <- scale(g0)
-
-```
-
-```{r}
-#clustering K-Means
-wssplot(g0, nc=6)
-```
-
-```{r}
-k <- kmeans(g0,2)
-```
-
-```{r}
-clusplot(g0, k$cluster, main='2D representation of the Cluster solution',
-         color=TRUE, shade=TRUE,
-         labels=2, lines=0)
 ```
 
 ```{r}
@@ -139,7 +63,6 @@ getCluster <- function(module,method,outliers,n) {
     
 }
 ```
-
 
 ```{r}
 module <- "UserCountry"
@@ -181,7 +104,6 @@ getCluster(module,method,outliers,n.clusters)
 module <- "UserLanguage"
 method <- "getLanguage"
 outliers <- c(2524,191,1268)
-# outliers <- c(919,11661,1347,6431)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
@@ -249,9 +171,6 @@ module <- "Actions"
 method <- "getPageUrls"
 outliers <- c(1498,1438,2354)
 n.clusters <- 2
-ag[[module]][[method]]$nb_hits_following_search <- NULL
-invisible(lapply(c("bounce_rate","exit_rate"),function(x)
-  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
 getCluster(module,method,outliers,n.clusters)
 ```
 
@@ -260,9 +179,6 @@ module <- "Actions"
 method <- "getEntryPageUrls"
 outliers <- c(1498,1438,2354)
 n.clusters <- 2
-ag[[module]][[method]]$nb_hits_following_search <- NULL
-invisible(lapply(c("bounce_rate","exit_rate"),function(x)
-  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
 getCluster(module,method,outliers,n.clusters)
 ```
 
@@ -271,9 +187,6 @@ module <- "Actions"
 method <- "getExitPageUrls"
 outliers <- c(1498,1438,2354)
 n.clusters <- 2
-ag[[module]][[method]]$nb_hits_following_search <- NULL
-invisible(lapply(c("bounce_rate","exit_rate"),function(x)
-  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
 getCluster(module,method,outliers,n.clusters)
 ```
 
@@ -282,9 +195,6 @@ module <- "Actions"
 method <- "getPageTitles"
 outliers <- c(494,830)
 n.clusters <- 2
-ag[[module]][[method]]$nb_hits_following_search <- NULL
-invisible(lapply(c("bounce_rate","exit_rate"),function(x)
-  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
 getCluster(module,method,outliers,n.clusters)
 ```
 
@@ -293,9 +203,6 @@ module <- "Actions"
 method <- "getEntryPageTitles"
 outliers <- c(494,830)
 n.clusters <- 2
-ag[[module]][[method]]$nb_hits_following_search <- NULL
-invisible(lapply(c("bounce_rate","exit_rate"),function(x)
-  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
 getCluster(module,method,outliers,n.clusters)
 ```
 
@@ -304,9 +211,6 @@ module <- "Actions"
 method <- "getExitPageTitles"
 outliers <- c(494,830)
 n.clusters <- 2
-ag[[module]][[method]]$nb_hits_following_search <- NULL
-invisible(lapply(c("bounce_rate","exit_rate"),function(x)
-  ag[[module]][[method]][,x] <<- as.numeric(sub("%","",ag[[module]][[method]][,x]))))
 getCluster(module,method,outliers,n.clusters)
 ```
 
