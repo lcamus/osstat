@@ -15,7 +15,7 @@ invisible(lapply(va,function(x){
   y <- unlist(strsplit(x,"\\."))
   ag[[y[1]]][[y[2]]][,y[[3]]] <<- NULL
   }))
-print(length(va),"useless variables dropped")
+print(paste(length(va),"useless variables dropped"))
 rm(va,to.drop)
 
 #convert numeric variables coded in string to numeric:
@@ -24,8 +24,8 @@ to.match <- c("nb_","max_","sum_","avg_","min_","_count(_|$)","value")
 to.exclude <- "nb_visits_percentage"
 
 l <- lapply(names(ag),function(x)
-  lapply(names(d[[x]]),function(y)
-    lapply(names(d[[x]][[y]]),function(z) {
+  lapply(names(ag[[x]]),function(y)
+    lapply(names(ag[[x]][[y]]),function(z) {
       s <- sapply(to.match,function(r) grep(r,z))
       to.num <<- c(to.num,paste(x,y,z,s))
     }
@@ -39,7 +39,7 @@ to.num <- strsplit(to.num," ")
 
 l <- lapply(to.num,function(x)
   ag[[x[1]]][[x[2]]][,x[3]] <<- tryCatch({
-    as.numeric(d[[x[1]]][[x[2]]][,x[3]])
+    as.numeric(ag[[x[1]]][[x[2]]][,x[3]])
   }, warning=function(w) {
     print(w$message)
     print(paste(x[1],x[2],x[3]))

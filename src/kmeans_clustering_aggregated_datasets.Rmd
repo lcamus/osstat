@@ -6,7 +6,7 @@ editor_options:
 ---
 
 ```{r}
-f <- "../data/os-aggregates_2017-10-02-2018-04-09.RData"
+f <- "../data/os-aggregates_2017-10-02-2018-04-13.RData"
 if(!exists("ag")) load(f)
 rm(f)
 ```
@@ -21,11 +21,15 @@ wssplot <- function(data, nc=15, seed=1234){
 ```
 
 ```{r}
-g <- ag[["VisitFrequency"]][["get"]]
+# module <- "VisitFrequency"
+# method <- "get"
+module <- "VisitFrequency"
+method <- "get"
+g <- ag[[module]][[method]]
 rownames(g) <- 1:nrow(g)
 
 g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))] #filter on numeric variables
-g0 <- g0[,which(!names(g0) %in% "nb_users_returning")] #useless variable
+# g0 <- g0[,which(!names(g0) %in% "nb_users_returning")] #useless variable
 g0 <- scale(g0)
 
 ```
@@ -76,13 +80,13 @@ clusplot(g0, k$cluster, main='2D representation of the Cluster solution',
 ```
 
 ```{r}
-g <- ag[["VisitsSummary"]][["get"]]
-# g <- na.omit(g)
+module <- "VisitsSummary"
+method <- "get"
+g <- ag[[module]][[method]]
 g <- g[-c(8,9,89,44),] #outliers
 rownames(g) <- 1:nrow(g)
 
 g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))] #filter on numeric variables
-g0 <- g0[,which(!names(g0) %in% "nb_users")] #useless variable
 g0 <- scale(g0)
 
 ```
@@ -100,4 +104,67 @@ k <- kmeans(g0,2)
 clusplot(g0, k$cluster, main='2D representation of the Cluster solution',
          color=TRUE, shade=TRUE,
          labels=2, lines=0)
+```
+
+```{r}
+getCluster <- function(module,method,outliers,n) {
+  
+  g <- ag[[module]][[method]]
+  if (!is.null(outliers))
+    g <- g[-outliers,] #remove outliers
+  rownames(g) <- 1:nrow(g)
+  g <- g[order(g$date,g$label),]
+  
+  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))] #filter on numeric variables
+  va <- names(g0)
+  g0 <- scale(g0)
+  
+  #clustering K-Means
+  wssplot(g0, nc=6)
+  
+  k <- kmeans(g0,n)
+  clusplot(g0, k$cluster, main=paste0("Clusters ",module,":",method),
+           color=TRUE, shade=TRUE,
+           labels=2, lines=0)
+  
+  print(va)
+    
+}
+```
+
+
+```{r}
+module <- "UserCountry"
+method <- "getCountry"
+# outliers <- c()
+outliers <- c(420,5186,499,2636)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "UserCountry"
+method <- "getRegion"
+# outliers <- c()
+outliers <- c(711,8969,867,4844)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "UserCountry"
+method <- "getContinent"
+# outliers <- c()
+outliers <- c(54,615,62,311)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
+```
+
+```{r}
+module <- "UserCountry"
+method <- "getCity"
+# outliers <- c()
+outliers <- c(919,11661,1347,6431)
+n.clusters <- 2
+getCluster(module,method,outliers,n.clusters)
 ```
