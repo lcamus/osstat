@@ -2,7 +2,8 @@
 #clean data
 
 #get data
-# load("data/d.RData")
+if (!exists("d"))
+  load("data/d.RData")
 
 print("* start cleaning individual data")
 

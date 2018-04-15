@@ -10,13 +10,13 @@ ag <- d[-match("Live",names(d))]
 to.drop <- c("metadata_","nb_users")
 va <- names(unlist(ag))
 va <- unique(gsub("\\d+$","",va))
-va <- va[unlist(lapply(to.drop,function(x) grep(x,va)))]
-invisible(lapply(va,function(x){
+va.drop <- va[unlist(lapply(to.drop,function(x) grep(x,va)))]
+invisible(lapply(va.drop,function(x){
   y <- unlist(strsplit(x,"\\."))
   ag[[y[1]]][[y[2]]][,y[[3]]] <<- NULL
   }))
-print(paste(length(va),"useless variables dropped"))
-rm(to.drop)
+print(paste(length(va.drop),"useless variables dropped"))
+rm(va.drop,to.drop)
 
 #convert numeric variables coded in string to numeric:
 to.num <- c()
@@ -54,7 +54,7 @@ f <- paste0("data/os-aggregates_",min(as.Date(ag[[1]][[1]]$date)),"-",max(as.Dat
 save(ag,file=f)
 print(paste("updated aggregates released:",f))
 
-rm(va,to.exclude,to.match,to.num,f,ag)
+# rm(va,to.exclude,to.match,to.num,f,ag)
 
 #end
 

@@ -6,7 +6,7 @@ editor_options:
 ---
 
 ```{r}
-f <- "../data/os-aggregates_2017-10-02-2018-04-13.RData"
+f <- "../data/os-aggregates_2017-10-02-2018-04-14.RData"
 if(!exists("ag")) load(f)
 rm(f)
 ```
@@ -161,9 +161,16 @@ cs <- getCluster(module,method,outliers,n.clusters)
 ```{r}
 module <- "VisitsSummary"
 method <- "get"
+va.rem <- c("max_actions")
+va.rm <- c()
 outliers <- c(8,89,9,44)
-n.clusters <- 2
-cs <- getCluster(module,method,outliers,n.clusters)
+n.clusters <- 3
+cs <- getCluster(module,method,outliers,n.clusters,va.rem)
+ag0 <- na.omit(ag[[module]][[method]][-outliers,
+                                      -which(names(ag[[module]][[method]]) %in% c("date",va.rem))])
+print(paste("Size of clusters",paste(cs$size,collapse=" ")))
+print("Characteristics of each cluster:")
+lapply(1:3,function(x) summary(ag0[which(cs$cluster==x),]))
 ```
 ***
 ```{r}

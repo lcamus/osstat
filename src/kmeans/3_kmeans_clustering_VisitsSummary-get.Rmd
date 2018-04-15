@@ -1,0 +1,94 @@
+---
+title: "K-means clustering on aggregated VisitsSummary:get dataset"
+output:
+  html_document:
+    code_folding: hide
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+f <- "../data/os-aggregates_2017-10-02-2018-04-14.RData"
+if(!exists("ag")) load(f)
+rm(f)
+```
+```{r}
+#remove useless variables:
+va.useless <- "nb_hits_following_search"
+  va <- names(unlist(ag))
+  va <- unique(gsub("\\d+$","",va))
+  va <- va[grep(va.useless,va)]
+invisible(lapply(strsplit(va,"\\."),function(x)
+  ag[[x[1]]][[x[2]]][,x[3]] <<- NULL))
+rm(va.useless)
+```
+```{r}
+wssplot <- function(data, nc=15, seed=1234){
+  wss <- (nrow(data)-1)*sum(apply(data,2,var))
+  for (i in 2:nc){
+    set.seed(seed)
+    wss[i] <- sum(kmeans(data, centers=i)$withinss)}
+  plot(1:nc, wss, type="b", xlab="Number of Clusters",
+       ylab="Within groups sum of squares")}
+```
+
+```{r}
+getCluster <- function(module,method,outliers,n,va.rem,va.set) {
+  
+  if (missing(va.rem)) va.rem <- NULL
+  if (missing(va.set)) va.set <- NULL
+  
+  g <- ag[[module]][[method]]
+  if (!is.null(g$label))
+    g <- g[order(g$date,g$label),]
+  else
+    g <- g[order(g$date),]
+  
+  if (is.null(va.set))
+    g <- ag[[module]][[method]][,which(!names(ag[[module]][[method]]) %in% va.rem)]
+  else
+    g <- ag[[module]][[method]][,which(names(ag[[module]][[method]]) %in% va.set)]
+  
+  g <- na.omit(g)
+  if (!is.null(outliers))
+    g <- g[-outliers,] #remove outliers
+  rownames(g) <- 1:nrow(g)
+ 
+  #filter on numeric variables
+  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))]
+  va <- names(g0)
+  g0 <- scale(g0)
+  
+  #clustering K-Means:
+  
+  wssplot(g0, nc=6)
+  
+  k <- kmeans(g0,n)
+  
+  suppressPackageStartupMessages(require(cluster))
+  clusplot(g0, k$cluster, main=paste0("Clusters ",module,":",method),
+           color=TRUE, shade=TRUE,
+           labels=2, lines=0)
+  
+  print(va)
+  
+  return(k)
+    
+}
+```
+***
+```{r}
+module <- "VisitsSummary"
+method <- "get"
+va.rem <- c("max_actions")
+va.rm <- c()
+outliers <- c(8,89,9,44)
+n.clusters <- 3
+cs <- getCluster(module,method,outliers,n.clusters,va.rem)
+ag0 <- na.omit(ag[[module]][[method]][-outliers,
+                                      -which(names(ag[[module]][[method]]) %in% c("date",va.rem))])
+cat(paste("Size of clusters:",paste(cs$size,collapse=" ")))
+cat("Characteristics of each cluster:")
+lapply(1:3,function(x) summary(ag0[which(cs$cluster==x),]))
+```
+
