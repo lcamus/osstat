@@ -1,0 +1,137 @@
+---
+title: "AGNES clustering on aggregated VisitsSummary:get dataset"
+output:
+  html_document:
+    code_folding: hide
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+f <- "./data/os-aggregates_2017-10-02-2018-04-14.RData"
+if(!exists("ag")) load(f)
+rm(f)
+```
+```{r}
+#remove useless variables:
+va.useless <- "nb_hits_following_search"
+va <- unlist(sapply(ag,function(x) lapply(x,names)))
+va <- data.frame(sub("\\d+$","",names(va)),va)
+rownames(va) <- paste(va[,1],va[,2],sep=".")
+va <- rownames(va)
+va <- va[grep(va.useless,va)]
+invisible(lapply(strsplit(va,"\\."),function(x)
+  ag[[x[1]]][[x[2]]][,x[3]] <<- NULL))
+rm(va.useless)
+```
+
+```{r}
+
+preparedata <- function(module,method,outliers,va.rem,va.set,stand) {
+  
+  if (missing(va.rem)) va.rem <- NULL
+  if (missing(va.set)) va.set <- NULL
+  if (missing(stand)) stand <- T
+  
+  g <- ag[[module]][[method]]
+  if (!is.null(g$label))
+    g <- g[order(g$date,g$label),]
+  else
+    g <- g[order(g$date),]
+  
+  if (is.null(va.set))
+    g <- ag[[module]][[method]][,which(!names(ag[[module]][[method]]) %in% va.rem)]
+  else
+    g <- ag[[module]][[method]][,which(names(ag[[module]][[method]]) %in% va.set)]
+  
+  g <- na.omit(g)
+  if (!is.null(outliers))
+    g <- g[-outliers,] #remove outliers
+  rownames(g) <- 1:nrow(g)
+ 
+  #filter on numeric variables
+  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))]
+  va <- names(g0)
+  
+  if (stand) g0 <- scale(g0)
+  
+  return(g0)
+  
+}
+
+getCluster.h <- function(dat,n) {
+  
+  #clustering
+  
+  d <- dist(dat, method = "euclidean")
+  H.fit <- hclust(d, method="ward")
+  groups <- cutree(H.fit, k=n)
+  
+  # plot(H.fit) # display dendogram
+  # rect.hclust(H.fit, k=n, border="red")
+  
+  suppressPackageStartupMessages(require(factoextra))
+  print(fviz_dend(H.fit,cex=0.6,k=n))
+  print(fviz_cluster(list(data=dat,cluster=groups)))
+  print(names(dat))
+  
+  return(groups)
+    
+}
+```
+
+```{r}
+getCluster.agnes <- function(module,method,outliers,n,va.rem,va.set) {
+  
+  if (missing(va.rem)) va.rem <- NULL
+  if (missing(va.set)) va.set <- NULL
+  
+  g <- ag[[module]][[method]]
+  if (!is.null(g$label))
+    g <- g[order(g$date,g$label),]
+  else
+    g <- g[order(g$date),]
+  
+  if (is.null(va.set))
+    g <- ag[[module]][[method]][,which(!names(ag[[module]][[method]]) %in% va.rem)]
+  else
+    g <- ag[[module]][[method]][,which(names(ag[[module]][[method]]) %in% va.set)]
+  
+  g <- na.omit(g)
+  if (!is.null(outliers))
+    g <- g[-outliers,] #remove outliers
+  rownames(g) <- 1:nrow(g)
+ 
+  #filter on numeric variables
+  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))]
+  va <- names(g0)
+  # g0 <- scale(g0)
+  
+  #clustering Agnes:
+  require(cluster)
+  res <- agnes(g0,diss=FALSE,stand=T,metric="euclidian")
+  # plot(res, main='Dendrogram') ## dendrogram
+  groups <- cutree(res, k=n)
+  # rect.hclust(res, k=n, border="red") 
+  suppressPackageStartupMessages(require(factoextra))
+  print(fviz_dend(res,cex=0.6,k=3))
+  print(fviz_cluster(list(data=g0,cluster=groups)))
+  
+  print(va)
+    
+}
+```
+
+***
+```{r}
+module <- "VisitsSummary"
+method <- "get"
+va.rem <- c("max_actions")
+va.rm <- c()
+outliers <- c(8,89,9,44)
+
+cs <- getCluster.h(module,method,outliers,n.clusters,va.rem)
+cs <- getCluster.agnes(module,method,outliers,n.clusters,va.rem)
+
+```
+
