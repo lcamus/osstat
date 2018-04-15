@@ -63,43 +63,39 @@ getCluster <- function(module,method,outliers,n) {
     
 }
 ```
-
+***
 ```{r}
 module <- "UserCountry"
 method <- "getCountry"
-# outliers <- c()
 outliers <- c(420,5186,499,2636)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "UserCountry"
 method <- "getRegion"
-# outliers <- c()
 outliers <- c(711,8969,867,4844)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "UserCountry"
 method <- "getContinent"
-# outliers <- c()
 outliers <- c(54,615,62,311)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "UserCountry"
 method <- "getCity"
-# outliers <- c()
 outliers <- c(919,11661,1347,6431)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "UserLanguage"
 method <- "getLanguage"
@@ -107,8 +103,7 @@ outliers <- c(2524,191,1268)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
-
+***
 ```{r}
 module <- "VisitFrequency"
 method <- "get"
@@ -116,7 +111,7 @@ outliers <- c()
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "VisitTime"
 method <- "getVisitInformationPerLocalTime"
@@ -124,7 +119,7 @@ outliers <- c(1042)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "VisitTime"
 method <- "getVisitInformationPerServerTime"
@@ -132,7 +127,7 @@ outliers <- c(1045)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "VisitTime"
 method <- "getByDayOfWeek"
@@ -140,7 +135,7 @@ outliers <- c(8,89,9)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "VisitorInterest"
 method <- "getNumberOfVisitsByVisitCount"
@@ -149,7 +144,7 @@ n.clusters <- 2
 ag[[module]][[method]]$nb_visits_per <- as.numeric(sub("%","",ag[[module]][[method]]$nb_visits_percentage))
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "VisitsSummary"
 method <- "get"
@@ -157,7 +152,7 @@ outliers <- c(8,89,9,44)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "get"
@@ -165,7 +160,7 @@ outliers <- c(143)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "getPageUrls"
@@ -173,7 +168,7 @@ outliers <- c(1498,1438,2354)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "getEntryPageUrls"
@@ -181,7 +176,7 @@ outliers <- c(1498,1438,2354)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "getExitPageUrls"
@@ -189,7 +184,7 @@ outliers <- c(1498,1438,2354)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "getPageTitles"
@@ -197,7 +192,7 @@ outliers <- c(494,830)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "getEntryPageTitles"
@@ -205,7 +200,7 @@ outliers <- c(494,830)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "getExitPageTitles"
@@ -213,7 +208,7 @@ outliers <- c(494,830)
 n.clusters <- 2
 getCluster(module,method,outliers,n.clusters)
 ```
-
+***
 ```{r}
 module <- "Actions"
 method <- "getDownloads"

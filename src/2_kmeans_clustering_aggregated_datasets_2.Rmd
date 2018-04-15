@@ -1,0 +1,232 @@
+---
+title: "K-means clustering on aggregated datasets (step 2)"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+f <- "../data/os-aggregates_2017-10-02-2018-04-13.RData"
+if(!exists("ag")) load(f)
+rm(f)
+```
+```{r}
+#remove useless variables:
+va.useless <- "nb_hits_following_search"
+va <- names(unlist(ag))
+va <- unique(gsub("\\d+$","",va))
+va <- va[grep(va.useless,va)]
+invisible(lapply(strsplit(va,"\\."),function(x)
+  ag[[x[1]]][[x[2]]][,x[3]] <<- NULL))
+rm(va.useless)
+```
+```{r}
+wssplot <- function(data, nc=15, seed=1234){
+  wss <- (nrow(data)-1)*sum(apply(data,2,var))
+  for (i in 2:nc){
+    set.seed(seed)
+    wss[i] <- sum(kmeans(data, centers=i)$withinss)}
+  plot(1:nc, wss, type="b", xlab="Number of Clusters",
+       ylab="Within groups sum of squares")}
+```
+
+```{r}
+getCluster <- function(module,method,outliers,n,va.rem,va.set) {
+  
+  if (missing(va.rem)) va.rem <- NULL
+  if (missing(va.set)) va.set <- NULL
+  
+  g <- ag[[module]][[method]]
+  if (!is.null(g$label))
+    g <- g[order(g$date,g$label),]
+  else
+    g <- g[order(g$date),]
+  
+  if (is.null(va.set))
+    g <- ag[[module]][[method]][,which(!names(ag[[module]][[method]]) %in% va.rem)]
+  else
+    g <- ag[[module]][[method]][,which(names(ag[[module]][[method]]) %in% va.set)]
+  
+  g <- na.omit(g)
+  if (!is.null(outliers))
+    g <- g[-outliers,] #remove outliers
+  rownames(g) <- 1:nrow(g)
+ 
+  #filter on numeric variables
+  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))]
+  va <- names(g0)
+  g0 <- scale(g0)
+  
+  #clustering K-Means:
+  
+  wssplot(g0, nc=6)
+  
+  k <- kmeans(g0,n)
+  
+  require(cluster)
+  clusplot(g0, k$cluster, main=paste0("Clusters ",module,":",method),
+           color=TRUE, shade=TRUE,
+           labels=2, lines=0)
+  
+  print(va)
+  
+  return(k)
+    
+}
+```
+***
+```{r}
+module <- "UserCountry"
+method <- "getCountry"
+va.rem <- c("max_actions")
+va.set <- c()
+outliers <- c(420,5186,499,2636)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters,va.rem,va.set)
+```
+***
+```{r}
+module <- "UserCountry"
+method <- "getRegion"
+outliers <- c(711,8969,867,4844)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "UserCountry"
+method <- "getContinent"
+outliers <- c(54,615,62,311)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "UserCountry"
+method <- "getCity"
+outliers <- c(919,11661,1347,6431)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "UserLanguage"
+method <- "getLanguage"
+outliers <- c(2524,191,1268)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "VisitFrequency"
+method <- "get"
+outliers <- c()
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "VisitTime"
+method <- "getVisitInformationPerLocalTime"
+outliers <- c(1042)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "VisitTime"
+method <- "getVisitInformationPerServerTime"
+outliers <- c(1045)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "VisitTime"
+method <- "getByDayOfWeek"
+outliers <- c(8,89,9)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "VisitorInterest"
+method <- "getNumberOfVisitsByVisitCount"
+outliers <- c(99,1233,113)
+n.clusters <- 2
+ag[[module]][[method]]$nb_visits_per <- as.numeric(sub("%","",ag[[module]][[method]]$nb_visits_percentage))
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "VisitsSummary"
+method <- "get"
+outliers <- c(8,89,9,44)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "get"
+outliers <- c(143)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "getPageUrls"
+outliers <- c(1498,1438,2354)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "getEntryPageUrls"
+outliers <- c(1498,1438,2354)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "getExitPageUrls"
+outliers <- c(1498,1438,2354)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "getPageTitles"
+outliers <- c(494,830)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "getEntryPageTitles"
+outliers <- c(494,830)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "getExitPageTitles"
+outliers <- c(494,830)
+n.clusters <- 2
+cs <- getCluster(module,method,outliers,n.clusters)
+```
+***
+```{r}
+module <- "Actions"
+method <- "getDownloads"
+outliers <- c(295,288,263)
+n.clusters <- 2
+ag[[module]][[method]] <- ag[[module]][[method]][,1:5]
+cs <- getCluster(module,method,outliers,n.clusters)
+```
