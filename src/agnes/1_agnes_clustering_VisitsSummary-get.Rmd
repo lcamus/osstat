@@ -54,6 +54,9 @@ preparedata <- function(module,method,outliers,va.rem,va.set,stand) {
   va <- names(g0)
   
   if (stand) g0 <- scale(g0)
+  g0 <- setNames(g0,va)
+  
+  attr(g0,"lib") <- paste(module,method,sep=":")
   
   return(g0)
   
@@ -72,6 +75,25 @@ getCluster.h <- function(dat,n) {
   
   suppressPackageStartupMessages(require(factoextra))
   print(fviz_dend(H.fit,cex=0.6,k=n))
+  print(fviz_cluster(list(data=dat,cluster=groups),main=paste"Cluster"))
+  print(names(dat))
+  
+  return(groups)
+    
+}
+
+getCluster.agnes <- function(dat,n) {
+  
+  #clustering Agnes:
+  suppressPackageStartupMessages(require(cluster))
+  res <- agnes(dat,diss=FALSE,stand=T,metric="euclidian")
+  groups <- cutree(res, k=n)
+  
+  # plot(res, main='Dendrogram') ## dendrogram
+  # rect.hclust(res, k=n, border="red") 
+  
+  suppressPackageStartupMessages(require(factoextra))
+  print(fviz_dend(res,cex=0.6,k=n))
   print(fviz_cluster(list(data=dat,cluster=groups)))
   print(names(dat))
   
@@ -79,59 +101,18 @@ getCluster.h <- function(dat,n) {
     
 }
 ```
-
-```{r}
-getCluster.agnes <- function(module,method,outliers,n,va.rem,va.set) {
-  
-  if (missing(va.rem)) va.rem <- NULL
-  if (missing(va.set)) va.set <- NULL
-  
-  g <- ag[[module]][[method]]
-  if (!is.null(g$label))
-    g <- g[order(g$date,g$label),]
-  else
-    g <- g[order(g$date),]
-  
-  if (is.null(va.set))
-    g <- ag[[module]][[method]][,which(!names(ag[[module]][[method]]) %in% va.rem)]
-  else
-    g <- ag[[module]][[method]][,which(names(ag[[module]][[method]]) %in% va.set)]
-  
-  g <- na.omit(g)
-  if (!is.null(outliers))
-    g <- g[-outliers,] #remove outliers
-  rownames(g) <- 1:nrow(g)
- 
-  #filter on numeric variables
-  g0 <- g[,which(sapply(names(g),function(x) is.numeric(g[,x])))]
-  va <- names(g0)
-  # g0 <- scale(g0)
-  
-  #clustering Agnes:
-  require(cluster)
-  res <- agnes(g0,diss=FALSE,stand=T,metric="euclidian")
-  # plot(res, main='Dendrogram') ## dendrogram
-  groups <- cutree(res, k=n)
-  # rect.hclust(res, k=n, border="red") 
-  suppressPackageStartupMessages(require(factoextra))
-  print(fviz_dend(res,cex=0.6,k=3))
-  print(fviz_cluster(list(data=g0,cluster=groups)))
-  
-  print(va)
-    
-}
-```
-
 ***
 ```{r}
 module <- "VisitsSummary"
 method <- "get"
 va.rem <- c("max_actions")
-va.rm <- c()
+va.set <- c()
 outliers <- c(8,89,9,44)
+n.clusters <- 3
 
-cs <- getCluster.h(module,method,outliers,n.clusters,va.rem)
-cs <- getCluster.agnes(module,method,outliers,n.clusters,va.rem)
+dat <- preparedata(module,method,outliers,va.rem,va.set,T)
+g <- getCluster.h(dat,n.clusters)
+g <- getCluster.agnes(dat,n.clusters)
 
 ```
 
