@@ -15,9 +15,13 @@ rm(f)
 ```{r}
 #remove useless variables:
 va.useless <- "nb_hits_following_search"
-  va <- names(unlist(ag))
-  va <- unique(gsub("\\d+$","",va))
-  va <- va[grep(va.useless,va)]
+va <- unlist(sapply(ag,function(x) lapply(x,names)))
+va <- data.frame(sub("\\d+$","",names(va)),va)
+rownames(va) <- paste(va[,1],va[,2],sep=".")
+va <- rownames(va)
+#   va <- names(unlist(ag))
+#   va <- unique(gsub("\\d+$","",va))
+va <- va[grep(va.useless,va)]
 invisible(lapply(strsplit(va,"\\."),function(x)
   ag[[x[1]]][[x[2]]][,x[3]] <<- NULL))
 rm(va.useless)

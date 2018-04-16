@@ -62,21 +62,22 @@ preparedata <- function(module,method,outliers,va.rem,va.set,stand) {
   
 }
 
-getCluster.h <- function(dat,n) {
+getCluster.ward <- function(dat,n) {
   
   #clustering
   
   d <- dist(dat, method = "euclidean")
-  H.fit <- hclust(d, method="ward")
+  suppressMessages(H.fit <- hclust(d, method="ward"))
   groups <- cutree(H.fit, k=n)
   
   # plot(H.fit) # display dendogram
   # rect.hclust(H.fit, k=n, border="red")
   
   suppressPackageStartupMessages(require(factoextra))
-  print(fviz_dend(H.fit,cex=0.6,k=n))
-  print(fviz_cluster(list(data=dat,cluster=groups),main=paste"Cluster"))
-  print(names(dat))
+  print(fviz_dend(H.fit,cex=0.6,k=n,
+                  main="Ward hierarchichal clustering (euclidean distance)", sub=attributes(dat)$lib))
+  print(fviz_cluster(list(data=dat,cluster=groups),main="Ward hierarchichal clustering (euclidean distance)"))
+  print(colnames(dat))
   
   return(groups)
     
@@ -93,15 +94,32 @@ getCluster.agnes <- function(dat,n) {
   # rect.hclust(res, k=n, border="red") 
   
   suppressPackageStartupMessages(require(factoextra))
-  print(fviz_dend(res,cex=0.6,k=n))
-  print(fviz_cluster(list(data=dat,cluster=groups)))
-  print(names(dat))
+  print(fviz_dend(res,cex=0.6,k=n,main="AGNES clustering",sub=attributes(dat)$lib))
+  print(fviz_cluster(list(data=dat,cluster=groups),main="AGNES clustering"))
+  print(colnames(dat))
   
   return(groups)
     
 }
+
+getCluster.kmeans <- function(dat,n) {
+  
+  #clustering K-Means:
+  
+  k <- kmeans(dat,n)
+  
+  # suppressPackageStartupMessages(require(cluster))
+  # clusplot(dat, k$cluster, main="K-means clustering",color=TRUE, shade=TRUE,labels=2, lines=0)
+  print(fviz_cluster(list(data=dat,cluster=k$cluster),main="K-means clustering"))
+  print(colnames(dat))
+  
+  return(k)
+    
+}
+
 ```
 ***
+#VisitsSummary:get aggregated dataset
 ```{r}
 module <- "VisitsSummary"
 method <- "get"
@@ -111,8 +129,23 @@ outliers <- c(8,89,9,44)
 n.clusters <- 3
 
 dat <- preparedata(module,method,outliers,va.rem,va.set,T)
-g <- getCluster.h(dat,n.clusters)
-g <- getCluster.agnes(dat,n.clusters)
+ag0 <- na.omit(ag[[module]][[method]][-outliers,
+                                      -which(names(ag[[module]][[method]]) %in% c("date",va.rem))])
+
+g.ward <- getCluster.ward(dat,n.clusters)
+cat("size of clusters:",table(g.ward))
+cat("Characteristics of each cluster:")
+lapply(1:3,function(x) summary(ag0[which(g.ward==x),]))
+
+g.agnes <- getCluster.agnes(dat,n.clusters)
+cat("size of clusters:",table(g.agnes))
+cat("Characteristics of each cluster:")
+lapply(1:3,function(x) summary(ag0[which(g.agnes==x),]))
+
+g.kmeans <- getCluster.kmeans(dat,n.clusters)
+cat("size of clusters:",g.kmeans$size)
+cat("Characteristics of each cluster:")
+lapply(1:3,function(x) summary(ag0[which(g.kmeans$cluster==x),]))
 
 ```
 
