@@ -1,0 +1,40 @@
+---
+title: "Track unknown country"
+output: html_notebook
+editor_options: 
+  chunk_output_type: inline
+---
+
+```{r}
+if (is.null(v))
+  load("./data/os-visits+actions_2017-10-02_2018-04-14.RData")
+```
+
+```{r}
+
+ip <- unique(v[v$country=="Unknown",]$visitIp)
+ip <- paste0("http://api.db-ip.com/v2/free/",ip)
+
+require(jsonlite)
+doc <- vector("list", length(ip))
+invisible(lapply(1:length(ip),function(x) doc[[x]] <<- fromJSON(txt=ip[x])))
+c.unk <- lapply(doc,function(x) do.call("rbind",x))
+c.unk <- as.data.frame(t(as.data.frame(c.unk,stringsAsFactors=F)),stringsAsFactors=F)
+rownames(c.unk) <- NULL
+saveRDS(c.unk,"./data/unknown_countries_ip.rds")
+
+```
+
+```{r}
+
+cat("* Frequency of countries among 'unknown' category:\n")
+sort(table(c.unk$countryName),decreasing=T)
+
+cat("\n* Distribution of 'unknown' countries on visits:\n")
+x <- left_join(v[v$country=="Unknown",c("visitIp","idVisit")],c.unk[,c("ipAddress","countryName")],by=c("visitIp"="ipAddress"))
+sort(table(x$countryName),decreasing=T)
+rm(x)
+
+```
+
+
