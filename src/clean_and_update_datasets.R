@@ -1,6 +1,9 @@
 
 #clean data
 
+suppressPackageStartupMessages(require(dplyr))
+f.unk <- "./data/unknown_countries_ip.rds"
+
 #get data
 if (!exists("d"))
   load("data/d.RData")
@@ -74,7 +77,6 @@ a <- a[,c(1:3,7,8,10,11,4:6,9,12)]
 var.na <- names(a)[!names(a) %in% c("date","idVisit","step","type")]
 a.na <- which(!rowSums(!is.na(a[,var.na])))
 rm(var.na)
-require(dplyr)
 v.na <- inner_join(a[a.na,],v[,c("idVisit","actions")],"idVisit")
 v.na <- v.na[v.na$step==v.na$actions,]$idVisit
 #discard NA-actions:
@@ -96,7 +98,6 @@ a <- a[!a$idVisit %in% url.na$idVisit,]
 rm(url.na)
 
 # harmonize timeSpent for last action-visit to 1ms
-require(dplyr)
 a.na <- inner_join(a[is.na(a$timeSpent),],v[,c("idVisit","actions")],"idVisit")
 a.na <- a.na[a.na$step==a.na$actions,]
 a.na$timeSpent <- "1"
@@ -139,6 +140,27 @@ a$gt.avg <- NULL
 a$generationTime <- NULL
 a$url <- NULL #no more useful
 rm(gt)
+
+#identify unknown countries
+c.unk <- readRDS(f.unk)
+rm(f.unk)
+# ip <- unique(v[v$country=="Unknown",]$visitIp)
+j.unk <- left_join(setNames(as.data.frame(v[v$visitIp %in% unique(v[v$country=="Unknown",]$visitIp),c("visitIp")],stringsAsFactors=F),"ipAddress"),
+                   c.unk[,c("ipAddress","countryCode","stateProv","city")],
+                   by="ipAddress")
+j.unk$countryCode <- tolower(j.unk$countryCode)
+j.unk <- left_join(j.unk,unique(v[,c("countryCode","continentCode")]),by="countryCode")
+j.unk <- setNames(j.unk,c("visitIp","country","region","city","continentCode"))
+v <- left_join(v,j.unk,by="visitIp")
+# v[!is.na(v$country.y),]$country==v[!is.na(v$country.y),]$country.y
+invisible(lapply(names(v)[grep("\\.y$",names(v))], function(x) {
+  v[!is.na(v[,x]),sub("\\.y$","",x)] <<- v[!is.na(v[,x]),x]
+  v[,x] <<- NULL
+}))
+rm(j.unk)
+
+                   # by=c("visitIp"="ipAddress"))
+rm(ip,c.unk)
 
 #export data:
 f <- paste0("data/os-visits+actions_",head(sort(a$date),1),"_",tail(sort(a$date),1),".RData")
