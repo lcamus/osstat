@@ -3,6 +3,7 @@
 
 suppressPackageStartupMessages(require(dplyr))
 f.unk <- "./data/unknown_countries_ip.rds"
+f.refCo <- "./data/refCountry.RData"
 
 #get data
 if (!exists("d"))
@@ -143,24 +144,26 @@ rm(gt)
 
 #identify unknown countries
 c.unk <- readRDS(f.unk)
-rm(f.unk)
-# ip <- unique(v[v$country=="Unknown",]$visitIp)
+load(f.refCo)
+# rm(f.unk,f.refCo)
+c.unk$countryCode <- tolower(c.unk$countryCode)
+c.unk <- left_join(c.unk[,-which(names(c.unk) %in% "countryName")],
+                   setNames(refCountry,c("countryCode","country")),
+                   by="countryCode")
 j.unk <- left_join(setNames(as.data.frame(v[v$visitIp %in% unique(v[v$country=="Unknown",]$visitIp),c("visitIp")],stringsAsFactors=F),"ipAddress"),
-                   c.unk[,c("ipAddress","countryCode","stateProv","city")],
+                   c.unk[,c("ipAddress","countryCode","stateProv","city","country")],
                    by="ipAddress")
-j.unk$countryCode <- tolower(j.unk$countryCode)
 j.unk <- left_join(j.unk,unique(v[,c("countryCode","continentCode")]),by="countryCode")
-j.unk <- setNames(j.unk,c("visitIp","country","region","city","continentCode"))
+j.unk <- setNames(j.unk,c("visitIp","countryCode","region","city","country","continentCode"))
+# 
 v <- left_join(v,j.unk,by="visitIp")
-# v[!is.na(v$country.y),]$country==v[!is.na(v$country.y),]$country.y
+v <- setNames(v,sub("\\.x$","",names(v)))
 invisible(lapply(names(v)[grep("\\.y$",names(v))], function(x) {
-  v[!is.na(v[,x]),sub("\\.y$","",x)] <<- v[!is.na(v[,x]),x]
+  v[!is.na(v[,x]),sub("\\.y$","",x)] <<- v[which(!is.na(v[,x])),x]
   v[,x] <<- NULL
 }))
-rm(j.unk)
-
-                   # by=c("visitIp"="ipAddress"))
-rm(ip,c.unk)
+#
+rm(ip,c.unk,j.unk)
 
 #export data:
 f <- paste0("data/os-visits+actions_",head(sort(a$date),1),"_",tail(sort(a$date),1),".RData")
