@@ -7,7 +7,7 @@
 #create table of requested pages
 require(tidyr, dplyr)
 pr <- a[a$type!="search",c("idVisit","step","pageIdAction","url")]
-pr$url <- sub("https://www.euro-area-statistics.org","",pr$url)
+pr$url <- sub("https://(www\\.)?euro-area-statistics\\.org","",pr$url)
 pr <- pr[,names(pr)[!names(pr) %in% c("idVisit","step")]]
 pr <- pr %>% group_by(url) %>% mutate(n=n())
 pr <- unique(pr)
