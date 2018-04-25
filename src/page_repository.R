@@ -14,7 +14,20 @@ pref <- "euro-area-statistics.org"
 
 #expand short URLs:
 url.short <- grep("/e-MTU",pr$url)
-invisible(lapply(url.short,GET))
+p <- lapply(url.short,GET)
+p.c <- lapply(p,content,"text")
+pat <- '"url":"([a-z,A-Z,-]+){1}"'
+lapply(pc.c,function(x){
+  r <- regexec(pat,x)[[1]]
+  paste0("/",substr(x,r[2],r[2]+attr(r,"match.length")[2]-1))
+})
+
+# var wizardConfig            = {"project":{"id":"bank-interest-rates-loans","owner":"ECBstage",
+# "title":{"en":"Bank interest rates - Loans"},"options":{"dataSource":{"en":"dummy"}},
+# "tabs":["1","2","3"],"url":"bank-interest-rates-loans"},"charts":
+
+
+
 
 #clear url prefix:
 pr <- a[a$type!="search",c("idVisit","step","pageIdAction","url")]
