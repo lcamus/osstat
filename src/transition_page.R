@@ -5,7 +5,19 @@ suppressPackageStartupMessages(require(dplyr))
 pr2 <- pr
 pr2$pg <- sub("^.+sdw.*\\.ecb\\.(europa\\.eu|int).+$","SDW",pr2$pg)
 pr2$pg <- sub("^file:.+$","FILE",pr2$pg)
-pr2$pg <- sub("^.+www.(ecb|bankingsupervision).europa.eu.+$","ECB",pr2$pg)
+pr2$pg <- sub("^.+(ecb|bankingsupervision).europa.eu.+$","ECB",pr2$pg)
+pr2$pg <- sub("^.+trans(late)?.*$","translate",pr2$pg)
+pr2$pg <- sub("^.+www\\.imf\\.org.*$","IMF",pr2$pg)
+pr2$pg <- sub("^.+www\\.ebf-fbe\\.eu.*$","EBF",pr2$pg)
+pr2$pg <- sub("^.+ec\\.europa\\.eu.*$","EC",pr2$pg)
+pr2$pg <- sub("^.+www\\.youtube\\.com.*$","YouTube",pr2$pg)
+pr2$pg <- sub("^.+sdmx\\.org.*$","SDMX.org",pr2$pg)
+
+ncbs <- c("http://www.nbb.be/","http://www.bundesbank.de/","http://www.eestipank.ee/","http://www.centralbank.ie/","http://www.bankofgreece.gr/","http://www.bde.es/","http://www.banque-france.fr/","http://www.bancaditalia.it/","http://www.centralbank.gov.cy/","http://www.bank.lv/","http://www.lb.lt/","http://www.bcl.lu/","http://www.centralbankmalta.org/","http://www.dnb.nl/","http://www.oenb.at/","http://www.bportugal.pt/","http://www.bsi.si/","http://www.nbs.sk/","http://www.suomenpankki.fi")
+invisible(lapply(ncbs,function(x){
+  pr2$pg <<- sub(paste0(x,".*$"),"NCBs",pr2$pg)
+}))
+
 
 dn <- sort(pr$pageIdAction)
 m <- matrix(0,nrow=nrow(pr)+1,ncol=nrow(pr)+1,dimnames=list(c(dn,"BEGIN"),c(dn,"END")))
