@@ -29,21 +29,23 @@ if (file.exists(fRefShortUrl)) {
   load(fRefShortUrl)
 } else
   su <- data.frame(short.url=c("/e-MTUxNDIzMjU3MQ"),expanded.url=c("/inflation-rates"),stringsAsFactors=F)
-invisible(lapply(grep("/e-MTU",pr$url),function(x){
+su.new <- F
+short.url <- invisible(sapply(grep("/e-MTU",pr$url),function(x){
   if (!pr[x,]$pg %in% su$short.url) {
     pat <- '"url":"([a-z,A-Z,-]+){1}"'
     print(paste0("*",x))
     g <- content(GET(paste0("https://",pref,pr[x,]$url)),"text")
-    G <<- g
-    # invisible(lapply(g,function(x){
-      r <- regexec(pat,g)[[1]]
-      su <<- rbind(su,
-                   c(pr[x,]$pg,
-                     paste0("/",substr(g,r[2],r[2]+attr(r,"match.length")[2]-1))))
+    r <- regexec(pat,g)[[1]]
+    su <<- rbind(su,
+                 c(pr[x,]$pg,
+                   paste0("/",substr(g,r[2],r[2]+attr(r,"match.length")[2]-1))))
+    su.new <<- T
   }
+  return(x)
 }))
-save(su,file=fRefShortUrl)
-rm(fRefShortUrl)
+if (su.new) save(su,file=fRefShortUrl)
+rm(fRefShortUrl,su.new)
+pr[short.url,]$pg <- left_join(setNames(data.frame(pr[short.url,]$pg,stringsAsFactors=F),"pg"),su,by=c("pg"="short.url"))[,2]
 
 #split the url:
 pr$url <- gsub(" ","",pr$url) #clean-up
