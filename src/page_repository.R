@@ -24,26 +24,19 @@ if (file.exists(fRefShortUrl)) {
 } else
   su <- data.frame(short.url=c("/e-MTUxNDIzMjU3MQ"),expanded.url=c("/inflation-rates"),stringsAsFactors=F)
 su.new <- F
-short.url <- invisible(sapply(grep("/e-MTU",unique(pr$url),value=T),function(x){
+invisible(sapply(grep("/e-MTU",unique(pr$url),value=T),function(x){
   pg <- sub("^.+(/e-MTU\\w+){1}\\?.+$","\\1",x)
   print(paste0("!",pg))
   if (!pg %in% su$short.url) {
     print(paste0("*",x))
-    # g <- content(GET(paste0("https://",pref,pr[x,]$url)),"text")
     g <- content(GET(x),"text")
-    # r <- regexec('"url":"([a-z,A-Z,-]+){1}"',g)[[1]]
     r <- sub('^.+"url":"([a-z,A-Z,-]+){1}".+$',"\\1",g)
-    # su <<- rbind(su,c(pg,paste0("/",substr(g,r[2],r[2]+attr(r,"match.length")[2]-1))))
-    print(paste0("**",pr[pr$url==x,]$url))
-    print(paste0("***",sub("/(\\w+){1}\\?",r,pr[pr$url==x,]$url)))
-    pr[pr$url==x,]$url <<- sub("/(\\w+){1}\\?",r,pr[pr$url==x,]$url)
     su <<- rbind(su,c(pg,paste0("/",r)))
     su.new <<- T
   }
-  return(x)
+  pr[pr$url==x,]$url <<- sub(pg,su[su$short.url==pg,]$expanded.url,x)
 }))
 if (su.new) save(su,file=fRefShortUrl)
-# pr[short.url,]$pg <- left_join(setNames(data.frame(pr[short.url,]$pg,stringsAsFactors=F),"pg"),su,by=c("pg"="short.url"))[,2]
 rm(fRefShortUrl,su.new,su)
 
 #group:
