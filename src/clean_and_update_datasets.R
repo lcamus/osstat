@@ -163,7 +163,7 @@ invisible(lapply(names(v)[grep("\\.y$",names(v))], function(x) {
   v[,x] <<- NULL
 }))
 #
-rm(ip,c.unk,j.unk)
+rm(c.unk,j.unk)
 
 #export data:
 f <- paste0("data/os-visits+actions_",head(sort(a$date),1),"_",tail(sort(a$date),1),".RData")

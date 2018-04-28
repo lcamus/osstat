@@ -14,15 +14,9 @@ suppressPackageStartupMessages(require(httr))
 
 pref <- "euro-area-statistics.org"
 
-#clear url prefix:
+#create data frame:
 pr <- a[a$type!="search",c("idVisit","step","pageIdAction","url")]
-pr$url <- sub(paste0("https://(www\\.)?",sub(".","\\.",pref)),
-              "",
-              pr$url)
 pr <- pr[,names(pr)[!names(pr) %in% c("idVisit","step")]]
-pr <- pr %>% group_by(url) %>% mutate(n=n())
-pr <- unique(pr)
-pr <- pr[with(pr,order(-n)),]
 
 #expand short URLs:
 if (file.exists(fRefShortUrl)) {
@@ -30,31 +24,44 @@ if (file.exists(fRefShortUrl)) {
 } else
   su <- data.frame(short.url=c("/e-MTUxNDIzMjU3MQ"),expanded.url=c("/inflation-rates"),stringsAsFactors=F)
 su.new <- F
-short.url <- invisible(sapply(grep("/e-MTU",pr$url),function(x){
-  if (!pr[x,]$pg %in% su$short.url) {
-    pat <- '"url":"([a-z,A-Z,-]+){1}"'
+short.url <- invisible(sapply(grep("/e-MTU",unique(pr$url),value=T),function(x){
+  pg <- sub("^.+(/e-MTU\\w+){1}\\?.+$","\\1",x)
+  print(paste0("!",pg))
+  if (!pg %in% su$short.url) {
     print(paste0("*",x))
-    g <- content(GET(paste0("https://",pref,pr[x,]$url)),"text")
-    r <- regexec(pat,g)[[1]]
-    su <<- rbind(su,
-                 c(pr[x,]$pg,
-                   paste0("/",substr(g,r[2],r[2]+attr(r,"match.length")[2]-1))))
+    # g <- content(GET(paste0("https://",pref,pr[x,]$url)),"text")
+    g <- content(GET(x),"text")
+    # r <- regexec('"url":"([a-z,A-Z,-]+){1}"',g)[[1]]
+    r <- sub('^.+"url":"([a-z,A-Z,-]+){1}".+$',"\\1",g)
+    # su <<- rbind(su,c(pg,paste0("/",substr(g,r[2],r[2]+attr(r,"match.length")[2]-1))))
+    print(paste0("**",pr[pr$url==x,]$url))
+    print(paste0("***",sub("/(\\w+){1}\\?",r,pr[pr$url==x,]$url)))
+    pr[pr$url==x,]$url <<- sub("/(\\w+){1}\\?",r,pr[pr$url==x,]$url)
+    su <<- rbind(su,c(pg,paste0("/",r)))
     su.new <<- T
   }
   return(x)
 }))
 if (su.new) save(su,file=fRefShortUrl)
-rm(fRefShortUrl,su.new)
-pr[short.url,]$pg <- left_join(setNames(data.frame(pr[short.url,]$pg,stringsAsFactors=F),"pg"),su,by=c("pg"="short.url"))[,2]
+# pr[short.url,]$pg <- left_join(setNames(data.frame(pr[short.url,]$pg,stringsAsFactors=F),"pg"),su,by=c("pg"="short.url"))[,2]
+rm(fRefShortUrl,su.new,su)
+
+#group:
+pr$url <- sub(paste0("https://(www\\.)?",sub(".","\\.",pref)),
+              "",
+              pr$url)
+pr <- pr %>% group_by(url) %>% mutate(n=n())
+pr <- unique(pr)
+pr <- pr[with(pr,order(-n)),]
 
 #split the url:
 pr$url <- gsub(" ","",pr$url) #clean-up
 pr <- pr %>% mutate(pg=lapply(strsplit(url,"\\?"),`[`,1))
+pr$pg <- as.character(pr$pg)
 pr <- pr %>% mutate(args=lapply(strsplit(url,"\\?"),`[`,2))
 pr$url <- NULL
 
 #sort by trafic:
-pr$pg <- as.character(pr$pg)
 pr <- pr %>% group_by(pg) %>% mutate(n.sum=sum(n))
 pr <- pr[with(pr,order(-n.sum,-n)),c("pageIdAction","n.sum","n","pg","args")]
 
@@ -72,7 +79,6 @@ rm(args.cat)
 
 #finalise dataset of page repository
 pr <- data.frame(pr,args.df,stringsAsFactors=F)
-# pr$url <- NULL
 rm(args.df)
 
 #export data
