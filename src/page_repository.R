@@ -70,6 +70,12 @@ args.df <- as.data.frame(lapply(args.df,function(x) x[,2]),col.names=args.cat,st
 args.df <- args.df[,names(sort(sapply(args.df,function(x) sum(!is.na(x))),decreasing=T))]
 rm(args.cat)
 
+#flag bad entries
+bad <- c(71576,75583,74845,74797,73224,72902,71694,71079,69463,67865,46224,66106,65786,57711,76033,75133,73900,66105,65083,65477,65478,87,64432,70635,74382,70232,73726,73983)
+pr$bad <- F
+pr[pr$pageIdAction %in% bad,]$bad <- T
+rm(bad)
+
 #finalise dataset of page repository
 pr <- data.frame(pr,args.df,stringsAsFactors=F)
 rm(args.df)
