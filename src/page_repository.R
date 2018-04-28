@@ -26,9 +26,8 @@ if (file.exists(fRefShortUrl)) {
 su.new <- F
 invisible(sapply(grep("/e-MTU",unique(pr$url),value=T),function(x){
   pg <- sub("^.+(/e-MTU\\w+){1}\\?.+$","\\1",x)
-  print(paste0("!",pg))
   if (!pg %in% su$short.url) {
-    print(paste0("*",x))
+    print(paste0("*new short-cut page ",x))
     g <- content(GET(x),"text")
     r <- sub('^.+"url":"([a-z,A-Z,-]+){1}".+$',"\\1",g)
     su <<- rbind(su,c(pg,paste0("/",r)))
