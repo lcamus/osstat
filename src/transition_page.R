@@ -3,8 +3,9 @@
 suppressPackageStartupMessages(require(dplyr))
 
 pr2 <- pr[pr$bad==F,]
-pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/SDW/\\2",pr2$pg)
-pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/SDW/\\2",pr2$pg)
+pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/sdw/\\2",pr2$pg)
+pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/bankscorner/sdw/datastructure",pr2$pg)
+pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^file:.+$","(local)",pr2$pg)
 pr2$pg <- sub("^.*www\\.(\\w+\\.)?(ecb|bankingsupervision)\\.europa\\.eu/.*$","/outlink/ECB",pr2$pg)
 pr2$pg <- sub("^.+trans(late)?.*$","/shared/translate",pr2$pg)
@@ -19,7 +20,7 @@ pr2$pg <- sub("^.*/data$","/shared/data",pr2$pg)
 pr2$pg <- sub("^.*/www\\.oecd\\.org.*$","/outlink/OECD",pr2$pg)
 pr2$pg <- sub("^.*/www\\.compareyourcountry\\.org.*$","/outlink/OECD",pr2$pg)
 pr2$pg <- sub("^/classic/banks-corner$","/bankscorner/",pr2$pg)
-pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorner/\\1/SDW",pr2$pg)
+pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorner/\\1/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^(/classic)?/banks-corner-(\\w{2,3})$","/bankscorner/\\2",pr2$pg)
 pr2$pg <- sub("^/classic/(.+)$","/insights/\\1",pr2$pg)
 pr2$pg <- sub("^/((\\w|-)+)$","/indicators/\\1",pr2$pg)
@@ -28,6 +29,13 @@ ncbs <- c("http://www.nbb.be/","http://www.bundesbank.de/","http://www.eestipank
 invisible(lapply(ncbs,function(x){
   pr2$pg <<- sub(paste0(x,".*$"),"/outlink/NCBs",pr2$pg)
 }))
+
+f <- grep("^/bankscorner/\\w{2,3}/sdw/.+$",pr2$pg)
+pr2[f,]$args <- sub("^/bankscorner/\\w{2,3}/sdw/","",pr2[f,]$pg)
+pr2[f,]$pg <- strsplit(pr2[f,]$pg,"/(\\w|\\.|\\+)+$")
+rm(f)
+
+pr2$pg <- tolower(pr2$pg)
 
 dn <- sort(pr$pageIdAction)
 m <- matrix(0,nrow=nrow(pr)+1,ncol=nrow(pr)+1,dimnames=list(c(dn,"BEGIN"),c(dn,"END")))
