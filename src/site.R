@@ -2,8 +2,10 @@
 #get structure of the website
 #---
 
-loadPackages("rvest")
-loadPackages("visNetwork")
+require("rvest")
+require("visNetwork")
+
+url_root <- "https://www.euro-area-statistics.org/"
 
 nodes <- data.frame(id=0,label="homepage",group="global",value=1,title="home",url=url_root)
 edges <- data.frame(from=0, to=0, label=NA, title="homepage")
@@ -14,7 +16,7 @@ homepage <- read_html(url_root)
 
 # Indicators :
 
-h <- homepage %>% html_nodes("#container > div > div > h2") %>% html_text()
+h <- homepage %>% html_nodes("body > section:nth-child(3) > div:nth-child(1) > div > ul") %>% html_text()
 for (i in h) {
   id <- max(nodes$id)+1
   nodes <- rbind(nodes,data.frame(id,label=i,group="Indicators",value=1,title=i,url=NA))

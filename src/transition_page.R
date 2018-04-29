@@ -2,7 +2,11 @@
 
 suppressPackageStartupMessages(require(dplyr))
 
+#refine repository page:
+
 pr2 <- pr[pr$bad==F,]
+pr2$bad <- NULL
+
 pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/bankscorner/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/sdw/\\2",pr2$pg)
@@ -35,7 +39,23 @@ pr2[f,]$args <- sub("^/bankscorner/\\w{2,3}/sdw/","",pr2[f,]$pg)
 pr2[f,]$pg <- strsplit(pr2[f,]$pg,"/(\\w|\\.|\\+)+$")
 rm(f)
 
+# pr2$pg <- sub("^/((\\w|-)+)$","/indicators/\\1",pr2$pg)
+
 pr2$pg <- tolower(pr2$pg)
+
+#merge identical (functional) pages:
+pages.to.merge <- list(c(26143,27926),c(26149,27854),c(70275,69417))
+invisible(lapply(pages.to.merge,function(x){
+  a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
+  invisible(lapply(c("n","n.sum"),function(y){
+    pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]    
+  }))
+  pr2 <<- pr2[pr2$pageIdAction!=x[2],]
+}))
+rm(pages.to.merge)
+
+
+#create network:
 
 dn <- sort(pr$pageIdAction)
 m <- matrix(0,nrow=nrow(pr)+1,ncol=nrow(pr)+1,dimnames=list(c(dn,"BEGIN"),c(dn,"END")))
