@@ -77,10 +77,14 @@ if (file.exists(fSiteHierarchy))
         refSiteHierarchy[nrow(refSiteHierarchy)+1,] <<- c(parent,child.pg,child.lib)
       }))
     }))
+    refSiteHierarchy$child.pg <- tolower(paste("/indicators",refSiteHierarchy$child.pg,sep="/"))
     refSiteHierarchy$child.path <- tolower(paste("/indicators",refSiteHierarchy$parent,refSiteHierarchy$child.lib,sep="/"))
+    # refSiteHierarchy[refSiteHierarchy$parent=="inflation-rates",] <-
+    #   sub("inflation-rates","inflation",refSiteHierarchy[refSiteHierarchy$parent=="inflation-rates",])
     save(refSiteHierarchy,file=fSiteHierarchy)
-    rm(url.root)
+    rm(url.root,fSiteHierarchy)
   }
+pr2 <- left_join(pr2,refSiteHierarchy[,c("child.pg","child.path")],by=c("pg"="child.pg"))
 
 #create network:
 
