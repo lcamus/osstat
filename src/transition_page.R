@@ -13,7 +13,7 @@ pr2$bad <- NULL
 pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/bankscorner/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/sdw/\\2",pr2$pg)
-pr2$pg <- sub("^file:.+$","(local)",pr2$pg)
+pr2$pg <- sub("^file:.+$","~local",pr2$pg)
 pr2$pg <- sub("^.*www\\.(\\w+\\.)?(ecb|bankingsupervision)\\.europa\\.eu/.*$","/outlink/ECB",pr2$pg)
 pr2$pg <- sub("^.+trans(late)?.*$","/shared/translate",pr2$pg)
 pr2$pg <- sub("^.*www\\.imf\\.org.*$","/outlink/IMF",pr2$pg)
@@ -101,18 +101,26 @@ aa <- aa %>% group_by(idVisit) %>% mutate(prev.a=ifelse(row_number()==1,NA,prev.
 aa <- aa %>% group_by(idVisit) %>% mutate(next.a=ifelse(row_number()==n(),NA,next.a))
 
 invisible(apply(aa,1,function(x) {
+  val.prev <- x["prev.a"]
+  # val.prev <- ifelse(is.na(val.prev),"BEGIN",val.prev)
   val.next <- x["next.a"]
-  # val.next <- ifelse(val.next=="NA","END",val.next)
   val.next <- ifelse(is.na(val.next),"END",val.next)
   val.next <- gsub(" ","",val.next)
   pia <- gsub(" ","",x["pg"])
   m[pia,val.next] <<- m[pia,val.next]+1
+  if(is.na(val.prev))
+    m["BEGIN",pia] <<- m["BEGIN",pia]+1
 }))
 
 # rm(aa)
 
 require(visNetwork)
 
-# nodes <- data.frame(id=rownames(m),label=rownames(m))
-# edges <- data.frame(from=)
-  
+nodes <- data.frame(id=rownames(m),label=rownames(m))
+edges <- setNames(data.frame(matrix(ncol = 2, nrow = 0),stringsAsFactors=F),c("from","to"))
+
+invisible(mapply(function(r,c){
+  if (m[r,c]!=0) edges[nrow(edges)+1,] <<- c(rownames(m)[r],colnames(m)[c])
+},row(m),col(m)))
+
+visNetwork(nodes,edges,width="100%")
