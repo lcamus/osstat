@@ -89,11 +89,12 @@ pr2 <- pr2 %>% group_by(pg) %>% mutate(n.sum=sum(n))
 
 dn <- sort(unique(pr2$pg))
 m <- matrix(0,nrow=length(dn)+1,ncol=length(dn)+1,dimnames=list(c(dn,"BEGIN"),c(dn,"END")))
-
 rm(dn)
+
 aa <- a[a$type!="search",]
-aa$prev.a <- lag(aa$pageIdAction)
-aa$next.a <- lead(aa$pageIdAction)
+aa <- left_join(aa,pr2[,c("pageIdAction","pg")],by="pageIdAction")
+aa$prev.a <- lag(aa$pg)
+aa$next.a <- lead(aa$pg)
 
 aa <- aa %>% group_by(idVisit) %>% mutate(prev.a=ifelse(row_number()==1,NA,prev.a))
 aa <- aa %>% group_by(idVisit) %>% mutate(next.a=ifelse(row_number()==n(),NA,next.a))
@@ -103,7 +104,7 @@ apply(aa,1,function(x) {
   # val.next <- ifelse(val.next=="NA","END",val.next)
   val.next <- ifelse(is.na(val.next),"END",val.next)
   val.next <- gsub(" ","",val.next)
-  pia <- gsub(" ","",x["pageIdAction"])
+  pia <- gsub(" ","",x["pg"])
   m[pia,val.next] <<- m[pia,val.next]+1
 })
 
