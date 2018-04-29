@@ -42,8 +42,6 @@ pr2[f,]$args <- sub("^/bankscorner/\\w{2,3}/sdw/","",pr2[f,]$pg)
 pr2[f,]$pg <- strsplit(pr2[f,]$pg,"/(\\w|\\.|\\+)+$")
 rm(f)
 
-# pr2$pg <- sub("^/((\\w|-)+)$","/indicators/\\1",pr2$pg)
-
 pr2$pg <- tolower(pr2$pg)
 
 #merge identical (functional) pages:
@@ -51,7 +49,7 @@ pages.to.merge <- list(c(26143,27926),c(26149,27854),c(70275,69417))
 invisible(lapply(pages.to.merge,function(x){
   a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
   invisible(lapply(c("n","n.sum"),function(y){
-    pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]    
+    pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]
   }))
   pr2 <<- pr2[pr2$pageIdAction!=x[2],]
 }))
@@ -62,29 +60,27 @@ if (file.exists(fSiteHierarchy))
   load(fSiteHierarchy) else
   {
     require("rvest")
-    h <- read_html(url_root) %>%
+    h <- read_html(url.root) %>%
       html_nodes("body > section:nth-child(3) > div:nth-child(1) > div > ul") %>% html_children()
     refSiteHierarchy <- setNames(data.frame(matrix(ncol = 3, nrow = 0),stringsAsFactors=F),
                                  c("parent","child.pg","child.lib"))
     invisible(lapply(h,function(x){
       parent <- html_children(x)[1] %>% html_text() %>% tolower() %>% gsub(pattern=" ",replacement="-")
-      print(paste0("*",parent))
       children <- html_children(x)[2] %>% html_children()
       invisible(lapply(children,function(y){
         child.pg <- y %>% html_children() %>% html_attr(name="href") %>% strsplit(split="?",fixed=T) %>% unlist() %>% head(1)
-        child.lib <-y %>% html_children() %>% html_text()
-        print(paste0("**",child.lib))
+        child.lib <-y %>% html_children() %>% html_text() %>% gsub(pattern=" ",replacement="-")
         refSiteHierarchy[nrow(refSiteHierarchy)+1,] <<- c(parent,child.pg,child.lib)
       }))
     }))
     refSiteHierarchy$child.pg <- tolower(paste("/indicators",refSiteHierarchy$child.pg,sep="/"))
     refSiteHierarchy$child.path <- tolower(paste("/indicators",refSiteHierarchy$parent,refSiteHierarchy$child.lib,sep="/"))
-    # refSiteHierarchy[refSiteHierarchy$parent=="inflation-rates",] <-
-    #   sub("inflation-rates","inflation",refSiteHierarchy[refSiteHierarchy$parent=="inflation-rates",])
     save(refSiteHierarchy,file=fSiteHierarchy)
     rm(url.root,fSiteHierarchy)
   }
 pr2 <- left_join(pr2,refSiteHierarchy[,c("child.pg","child.path")],by=c("pg"="child.pg"))
+pr2[!is.na(pr2$child.path),]$pg <- pr2[!is.na(pr2$child.path),]$child.path
+pr2$child.path <- NULL
 
 #create network:
 
