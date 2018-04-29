@@ -16,7 +16,7 @@ homepage <- read_html(url_root)
 
 # Indicators :
 
-h <- homepage %>% html_nodes("body > section:nth-child(3) > div:nth-child(1) > div > ul") %>% html_text()
+h <- homepage %>% html_nodes("body > section:nth-child(3) > div:nth-child(1) > div > ul") %>% html_children()
 for (i in h) {
   id <- max(nodes$id)+1
   nodes <- rbind(nodes,data.frame(id,label=i,group="Indicators",value=1,title=i,url=NA))
