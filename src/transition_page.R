@@ -47,7 +47,7 @@ pr2$pg <- tolower(pr2$pg)
 #merge identical (functional) pages:
 pages.to.merge <- list(c(26143,27926),c(26149,27854),c(70275,69417))
 invisible(lapply(pages.to.merge,function(x){
-  a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
+  # a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
   invisible(lapply(c("n","n.sum"),function(y){
     pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]
   }))
@@ -82,10 +82,14 @@ pr2 <- left_join(pr2,refSiteHierarchy[,c("child.pg","child.path")],by=c("pg"="ch
 pr2[!is.na(pr2$child.path),]$pg <- pr2[!is.na(pr2$child.path),]$child.path
 pr2$child.path <- NULL
 
+#update sum group:
+pr2 <- pr2 %>% group_by(pg) %>% mutate(n.sum=sum(n))
+
 #create network:
 
-dn <- sort(pr$pageIdAction)
-m <- matrix(0,nrow=nrow(pr)+1,ncol=nrow(pr)+1,dimnames=list(c(dn,"BEGIN"),c(dn,"END")))
+dn <- sort(unique(pr2$pg))
+m <- matrix(0,nrow=length(dn)+1,ncol=length(dn)+1,dimnames=list(c(dn,"BEGIN"),c(dn,"END")))
+
 rm(dn)
 aa <- a[a$type!="search",]
 aa$prev.a <- lag(aa$pageIdAction)
