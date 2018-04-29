@@ -47,7 +47,7 @@ pr2$pg <- tolower(pr2$pg)
 #merge identical (functional) pages:
 pages.to.merge <- list(c(26143,27926),c(26149,27854),c(70275,69417))
 invisible(lapply(pages.to.merge,function(x){
-  # a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
+  a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
   invisible(lapply(c("n","n.sum"),function(y){
     pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]
   }))
@@ -88,25 +88,26 @@ pr2 <- pr2 %>% group_by(pg) %>% mutate(n.sum=sum(n))
 #create network:
 
 dn <- sort(unique(pr2$pg))
-m <- matrix(0,nrow=length(dn)+1,ncol=length(dn)+1,dimnames=list(c(dn,"BEGIN"),c(dn,"END")))
+m <- matrix(0,nrow=length(dn)+2,ncol=length(dn)+2,dimnames=list(c(dn,"BEGIN","ERR"),c(dn,"END","ERR")))
 rm(dn)
 
 aa <- a[a$type!="search",]
 aa <- left_join(aa,pr2[,c("pageIdAction","pg")],by="pageIdAction")
+aa[is.na(aa$pg),]$pg<- "ERR"
 aa$prev.a <- lag(aa$pg)
 aa$next.a <- lead(aa$pg)
 
 aa <- aa %>% group_by(idVisit) %>% mutate(prev.a=ifelse(row_number()==1,NA,prev.a))
 aa <- aa %>% group_by(idVisit) %>% mutate(next.a=ifelse(row_number()==n(),NA,next.a))
 
-apply(aa,1,function(x) {
+invisible(apply(aa,1,function(x) {
   val.next <- x["next.a"]
   # val.next <- ifelse(val.next=="NA","END",val.next)
   val.next <- ifelse(is.na(val.next),"END",val.next)
   val.next <- gsub(" ","",val.next)
   pia <- gsub(" ","",x["pg"])
   m[pia,val.next] <<- m[pia,val.next]+1
-})
+}))
 
 # rm(aa)
 
