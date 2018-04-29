@@ -13,7 +13,7 @@ pr2$bad <- NULL
 pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/bankscorner/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/sdw/\\2",pr2$pg)
-pr2$pg <- sub("^file:.+$","~local",pr2$pg)
+pr2$pg <- sub("^file:.+$","local",pr2$pg)
 pr2$pg <- sub("^.*www\\.(\\w+\\.)?(ecb|bankingsupervision)\\.europa\\.eu/.*$","/outlink/ECB",pr2$pg)
 pr2$pg <- sub("^.+trans(late)?.*$","/shared/translate",pr2$pg)
 pr2$pg <- sub("^.*www\\.imf\\.org.*$","/outlink/IMF",pr2$pg)
@@ -115,12 +115,22 @@ invisible(apply(aa,1,function(x) {
 # rm(aa)
 
 require(visNetwork)
+require(RColorBrewer)
 
-nodes <- data.frame(id=rownames(m),label=rownames(m))
+nodes <- data.frame(id=c(colnames(m),"BEGIN"),
+                    label=c(sub("^/\\w+","",colnames(m)),"BEGIN"),
+                    value=c(colSums(m),1),
+                    stringsAsFactors=F)
+nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
+nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
+nodes.colors <- setNames(data.frame(unique(nodes$group),brewer.pal(n=7, name = "Set2"),stringsAsFactors=F),
+                         c("group","color"))
+nodes <- left_join(nodes,nodes.colors,by="group")
+
 edges <- setNames(data.frame(matrix(ncol = 2, nrow = 0),stringsAsFactors=F),c("from","to"))
 
 invisible(mapply(function(r,c){
   if (m[r,c]!=0) edges[nrow(edges)+1,] <<- c(rownames(m)[r],colnames(m)[c])
 },row(m),col(m)))
 
-visNetwork(nodes,edges,width="100%")
+visNetwork(nodes,edges,width="100%") %>% visLegend()
