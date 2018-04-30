@@ -131,15 +131,19 @@ invisible(mapply(function(r,c){
 
 #display network:
 
-visNetwork(nodes,edges,width="100%") %>%
+network <- visNetwork(nodes,edges,main="Our statistics",width="100%") %>%
   visLegend() %>%
-  visOptions(highlightNearest=list(enabled=T, degree=1),nodesIdSelection=T,selectedBy="group") %>%
+  visOptions(highlightNearest=list(enabled=T, degree=1),nodesIdSelection=T,
+             selectedBy=list(variable="group",multiple=T,selected="indicators")) %>%
   visGroups(groupname="indicators",color="#6fb871") %>%
   visGroups(groupname="insights",color="#5cbde3") %>%
   visGroups(groupname="bankscorner",color="#D9685E") %>%
   visGroups(groupname="shared",color="#004996") %>%
   visGroups(groupname="outlink",color="antiquewhite") %>%
   visGroups(groupname="event",color="darkgray") %>%
-  visEdges(arrows='to') %>%
-  visInteraction(navigationButtons=T)
-  
+  # visEdges(arrows='to') %>%
+  visInteraction(navigationButtons=T) %>%
+  visPhysics(stabilization=F,solver="forceAtlas2Based")
+
+visSave(network, file = "network.html")
+
