@@ -102,7 +102,6 @@ aa <- aa %>% group_by(idVisit) %>% mutate(next.a=ifelse(row_number()==n(),NA,nex
 
 invisible(apply(aa,1,function(x) {
   val.prev <- x["prev.a"]
-  # val.prev <- ifelse(is.na(val.prev),"BEGIN",val.prev)
   val.next <- x["next.a"]
   val.next <- ifelse(is.na(val.next),"END",val.next)
   val.next <- gsub(" ","",val.next)
@@ -115,17 +114,14 @@ invisible(apply(aa,1,function(x) {
 # rm(aa)
 
 require(visNetwork)
-require(RColorBrewer)
 
 nodes <- data.frame(id=c(colnames(m),"BEGIN"),
-                    label=c(sub("^/\\w+","",colnames(m)),"BEGIN"),
+                    label=c(sub("^/\\w+/","",colnames(m)),"BEGIN"),
                     value=c(colSums(m),1),
                     stringsAsFactors=F)
 nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
 nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
-nodes.colors <- setNames(data.frame(unique(nodes$group),brewer.pal(n=7, name = "Set2"),stringsAsFactors=F),
-                         c("group","color"))
-nodes <- left_join(nodes,nodes.colors,by="group")
+nodes[nodes$id=="/",]$group <- "shared"
 
 edges <- setNames(data.frame(matrix(ncol = 2, nrow = 0),stringsAsFactors=F),c("from","to"))
 
@@ -133,4 +129,17 @@ invisible(mapply(function(r,c){
   if (m[r,c]!=0) edges[nrow(edges)+1,] <<- c(rownames(m)[r],colnames(m)[c])
 },row(m),col(m)))
 
-visNetwork(nodes,edges,width="100%") %>% visLegend()
+#display network:
+
+visNetwork(nodes,edges,width="100%") %>%
+  visLegend() %>%
+  visOptions(highlightNearest=list(enabled=T, degree=1),nodesIdSelection=T,selectedBy="group") %>%
+  visGroups(groupname="indicators",color="#6fb871") %>%
+  visGroups(groupname="insights",color="#5cbde3") %>%
+  visGroups(groupname="bankscorner",color="#D9685E") %>%
+  visGroups(groupname="shared",color="#004996") %>%
+  visGroups(groupname="outlink",color="antiquewhite") %>%
+  visGroups(groupname="event",color="darkgray") %>%
+  visEdges(arrows='to') %>%
+  visInteraction(navigationButtons=T)
+  
