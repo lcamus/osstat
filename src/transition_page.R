@@ -136,6 +136,8 @@ getTitle <- function() {
   return(res)
 }
 
+groups.order <- c("indicators","insights","bankscorner","shared","outlink","event")
+
 nodes <- data.frame(id=c(colnames(m),"BEGIN"),
                     label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
                     value=c(colSums(m),rowSums(m)[dim(m)[1]]),
@@ -146,7 +148,7 @@ nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
 nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
 nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
 nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
-nodes <- nodes[order(nodes$label),]
+nodes <- nodes[unlist(lapply(groups.order,function(x) which(nodes$group %in% x))),]
 
 edges <- setNames(data.frame(matrix(ncol=3, nrow=0),stringsAsFactors=F),c("from","to","value"))
 
@@ -156,17 +158,21 @@ invisible(mapply(function(r,c){
 
 #display network:
 
-groups <- data.frame(label=c("indicators","insights","bankscorner","shared","outlink","event"),
-                     color=c("#6fb871","#5cbde3","#D9685E","#004996","darkorange","darkmagenta")
-                     ,stringsAsFactors=F)
-lnodes <- data.frame(label=groups$label,color=groups$color)
+groups <- data.frame(label=groups.order,
+                     color=c("#6fb871","#5cbde3","#D9685E","#004996","darkorange","darkmagenta"),
+                     desc=c("indicators","Insights into euro area statistics","Banks' Corner",
+                            "shared pages and features (incl. homepage)",
+                            "outlinks to external pages (institutional websites and web ressources)",
+                            "events related to visit (begin, end, error and save to local)"
+                            ),stringsAsFactors=F)
+lnodes <- data.frame(label=groups$label,color=groups$color,shape="square",
+                     title=groups$desc)
 
 network <- visNetwork(nodes,edges,width="100%",
                       main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
   visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
   visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
-             selectedBy=list(variable="group",selected="indicators",
-                             values=c("indicators","bankscorner","insights","outlink","shared","event"))) %>%
+             selectedBy=list(variable="group",selected="indicators",values=groups.order)) %>%
   visInteraction(navigationButtons=T) %>%
   visPhysics(stabilization=F,solver="forceAtlas2Based")
 
