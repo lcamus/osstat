@@ -31,6 +31,7 @@ pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorn
 pr2$pg <- sub("^(/classic)?/banks-corner-(\\w{2,3})$","/bankscorner/\\2",pr2$pg)
 pr2$pg <- sub("^/classic/(.+)$","/insights/\\1",pr2$pg)
 pr2$pg <- sub("^/((\\w|-)+)$","/indicators/\\1",pr2$pg)
+pr2$pg <- sub("^/$","/homepage",pr2$pg)
 
 ncbs <- c("http://www.nbb.be/","http://www.bundesbank.de/","http://www.eestipank.ee/","http://www.centralbank.ie/","http://www.bankofgreece.gr/","http://www.bde.es/","http://www.banque-france.fr/","http://www.bancaditalia.it/","http://www.centralbank.gov.cy/","http://www.bank.lv/","http://www.lb.lt/","http://www.bcl.lu/","http://www.centralbankmalta.org/","http://www.dnb.nl/","http://www.oenb.at/","http://www.bportugal.pt/","http://www.bsi.si/","http://www.nbs.sk/","http://www.suomenpankki.fi")
 invisible(lapply(ncbs,function(x){
@@ -88,7 +89,7 @@ pr2 <- pr2 %>% group_by(pg) %>% mutate(n.sum=sum(n))
 #create network:
 
 dn <- sort(unique(pr2$pg))
-m <- matrix(0,nrow=length(dn)+2,ncol=length(dn)+2,dimnames=list(c(dn,"BEGIN","ERR"),c(dn,"END","ERR")))
+m <- matrix(0,nrow=length(dn)+2,ncol=length(dn)+2,dimnames=list(c(dn,"ERR","BEGIN"),c(dn,"ERR","END")))
 rm(dn)
 
 aa <- a[a$type!="search",]
@@ -111,21 +112,32 @@ invisible(apply(aa,1,function(x) {
     m["BEGIN",pia] <<- m["BEGIN",pia]+1
 }))
 
-# rm(aa)
-
 require(visNetwork)
+
+getTitle <- function() {
+  
+  incoming <- c(colSums(m),0)
+  outcoming <- c(rowSums(m)-m[,dim(m)[1]],tail(rowSums(m),1))
+  if (incoming==0)
+    bouncing <- "-"
+  else
+    bouncing <- paste0(as.character(round((incoming-outcoming)/incoming*100,0)),"%")
+  
+  res <- paste0(c(gsub("/"," > ",sub("^/","",colnames(m))),"BEGIN"),
+         "<br><br>incoming traffic ",incoming,
+         "<br>outcoming traffic ",outcoming,
+         "<br>bouncing rate ",bouncing)
+  return(res)
+}
 
 nodes <- data.frame(id=c(colnames(m),"BEGIN"),
                     label=c(sub("^/\\w+/","",colnames(m)),"BEGIN"),
                     value=c(colSums(m),1),
-                    title=paste0("incoming traffic ",c(colSums(m),0),
-                                "\noutcoming traffic ",c(
-                                  replace(rowSums(m),which(rownames(m) %in% "BEGIN"),0),
-                                  rowSums(m)[which(rownames(m) %in% "BEGIN")])),
+                    title=getTitle(),
                     stringsAsFactors=F)
 nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
 nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
-nodes[nodes$id=="/",]$group <- "shared"
+nodes[nodes$id=="/homepage",]$group <- "shared"
 
 edges <- setNames(data.frame(matrix(ncol=3, nrow=0),stringsAsFactors=F),c("from","to","value"))
 
@@ -136,7 +148,7 @@ invisible(mapply(function(r,c){
 #display network:
 
 network <- visNetwork(nodes,edges,width="100%",
-                      main=paste0("Our statistics (from ",min(a$date)," to ",max(a$date),")")) %>%
+                      main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
   visLegend(main="group") %>%
   visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
              selectedBy=list(variable="group",multiple=T,selected="indicators")) %>%
@@ -145,12 +157,14 @@ network <- visNetwork(nodes,edges,width="100%",
   visGroups(groupname="bankscorner",color="#D9685E") %>%
   visGroups(groupname="shared",color="#004996") %>%
   visGroups(groupname="outlink",color="antiquewhite") %>%
-  visGroups(groupname="event",color="black") %>%
-  # visEdges(arrows='to') %>%
+  visGroups(groupname="event",color="cornsilk") %>%
   visInteraction(navigationButtons=T) %>%
   visPhysics(stabilization=F,solver="forceAtlas2Based")
 
 network
 
 visSave(network, file = "network.html")
+
+# rm(aa)
+
 
