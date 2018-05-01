@@ -117,11 +117,15 @@ require(visNetwork)
 getTitle <- function() {
   
   incoming <- c(colSums(m),0)
-  outcoming <- c(rowSums(m)-m[,dim(m)[1]],tail(rowSums(m),1))
-  if (incoming==0)
-    bouncing <- "-"
-  else
-    bouncing <- paste0(as.character(round((incoming-outcoming)/incoming*100,0)),"%")
+  outcoming <- c(rowSums(m)-m[,dim(m)[1]],tail(rowSums(m),1),rowSums(m)[dim(m)[1]])
+  bouncing <- round((incoming-outcoming)/incoming*100,0)
+  bouncing <- sapply(bouncing,function(x){
+    if (is.infinite(x))
+      res <- "-"
+    else
+      res <- paste0(as.character(x),"%")
+    return(res)
+  })
   
   res <- paste0(c(gsub("/"," > ",sub("^/","",colnames(m))),"BEGIN"),
          "<br><br>incoming traffic ",incoming,
@@ -132,7 +136,7 @@ getTitle <- function() {
 
 nodes <- data.frame(id=c(colnames(m),"BEGIN"),
                     label=c(sub("^/\\w+/","",colnames(m)),"BEGIN"),
-                    value=c(colSums(m),1),
+                    value=c(colSums(m),rowSums(m)[dim(m)[1]]),
                     title=getTitle(),
                     stringsAsFactors=F)
 nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
@@ -147,19 +151,22 @@ invisible(mapply(function(r,c){
 
 #display network:
 
+groups <- data.frame(label=c("indicators","insights","bankscorner","shared","outlink","event"),
+                     color=c("#6fb871","#5cbde3","#D9685E","#004996","darkorange","darkmagenta")
+                     ,stringsAsFactors=F)
+lnodes <- data.frame(label=groups$label,color=groups$color)
+
 network <- visNetwork(nodes,edges,width="100%",
                       main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
-  visLegend(main="group") %>%
+  visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
   visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
              selectedBy=list(variable="group",multiple=T,selected="indicators")) %>%
-  visGroups(groupname="indicators",color="#6fb871") %>%
-  visGroups(groupname="insights",color="#5cbde3") %>%
-  visGroups(groupname="bankscorner",color="#D9685E") %>%
-  visGroups(groupname="shared",color="#004996") %>%
-  visGroups(groupname="outlink",color="antiquewhite") %>%
-  visGroups(groupname="event",color="cornsilk") %>%
   visInteraction(navigationButtons=T) %>%
   visPhysics(stabilization=F,solver="forceAtlas2Based")
+
+invisible(apply(groups,1,function(x){
+  network <<- network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2]))
+}))
 
 network
 
