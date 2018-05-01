@@ -11,7 +11,8 @@ pr2 <- pr[pr$bad==F,]
 pr2$bad <- NULL
 
 pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/sdw/\\2",pr2$pg)
-pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/bankscorner/sdw/datastructure",pr2$pg)
+pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/outlink/sdw/datastructure",pr2$pg)
+# pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/bankscorner/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^file:.+$","local",pr2$pg)
 pr2$pg <- sub("^.*www\\.(\\w+\\.)?(ecb|bankingsupervision)\\.europa\\.eu/.*$","/outlink/ECB",pr2$pg)
@@ -27,7 +28,8 @@ pr2$pg <- sub("^.*/data$","/shared/data",pr2$pg)
 pr2$pg <- sub("^.*/www\\.oecd\\.org.*$","/outlink/OECD",pr2$pg)
 pr2$pg <- sub("^.*/www\\.compareyourcountry\\.org.*$","/outlink/OECD",pr2$pg)
 pr2$pg <- sub("^/classic/banks-corner$","/bankscorner/",pr2$pg)
-pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorner/\\1/sdw/datastructure",pr2$pg)
+pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorner/\\1",pr2$pg)
+# pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorner/\\1/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^(/classic)?/banks-corner-(\\w{2,3})$","/bankscorner/\\2",pr2$pg)
 pr2$pg <- sub("^/classic/(.+)$","/insights/\\1",pr2$pg)
 pr2$pg <- sub("^/((\\w|-)+)$","/indicators/\\1",pr2$pg)
@@ -46,15 +48,15 @@ rm(f)
 pr2$pg <- tolower(pr2$pg)
 
 #merge identical (functional) pages:
-pages.to.merge <- list(c(26143,27926),c(26149,27854),c(70275,69417))
-invisible(lapply(pages.to.merge,function(x){
-  a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
-  invisible(lapply(c("n","n.sum"),function(y){
-    pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]
-  }))
-  pr2 <<- pr2[pr2$pageIdAction!=x[2],]
-}))
-rm(pages.to.merge)
+# pages.to.merge <- list(c(26143,27926),c(26149,27854),c(70275,69417))
+# invisible(lapply(pages.to.merge,function(x){
+#   a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
+#   invisible(lapply(c("n","n.sum"),function(y){
+#     pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]
+#   }))
+#   pr2 <<- pr2[pr2$pageIdAction!=x[2],]
+# }))
+# rm(pages.to.merge)
 
 #reflect site hierarchy:
 if (file.exists(fSiteHierarchy))
@@ -117,7 +119,7 @@ require(visNetwork)
 getTitle <- function() {
   
   incoming <- c(colSums(m),0)
-  outcoming <- c(rowSums(m)-m[,dim(m)[1]],tail(rowSums(m),1),rowSums(m)[dim(m)[1]])
+  outcoming <- c(rowSums(m[1:nrow(m)-1,1:ncol(m)-1]),0,rowSums(m)[dim(m)[1]])
   bouncing <- round((incoming-outcoming)/incoming*100,0)
   bouncing <- sapply(bouncing,function(x){
     if (is.infinite(x))
@@ -127,7 +129,7 @@ getTitle <- function() {
     return(res)
   })
   
-  res <- paste0(c(gsub("/"," > ",sub("^/","",colnames(m))),"BEGIN"),
+  res <- paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"),
          "<br><br>incoming traffic ",incoming,
          "<br>outcoming traffic ",outcoming,
          "<br>bouncing rate ",bouncing)
@@ -135,13 +137,16 @@ getTitle <- function() {
 }
 
 nodes <- data.frame(id=c(colnames(m),"BEGIN"),
-                    label=c(sub("^/\\w+/","",colnames(m)),"BEGIN"),
+                    label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
                     value=c(colSums(m),rowSums(m)[dim(m)[1]]),
                     title=getTitle(),
                     stringsAsFactors=F)
 nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
 nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
-nodes[nodes$id=="/homepage",]$group <- "shared"
+nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
+nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
+nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
+nodes <- nodes[order(nodes$label),]
 
 edges <- setNames(data.frame(matrix(ncol=3, nrow=0),stringsAsFactors=F),c("from","to","value"))
 
@@ -160,7 +165,8 @@ network <- visNetwork(nodes,edges,width="100%",
                       main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
   visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
   visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
-             selectedBy=list(variable="group",multiple=T,selected="indicators")) %>%
+             selectedBy=list(variable="group",selected="indicators",
+                             values=c("indicators","bankscorner","insights","outlink","shared","event"))) %>%
   visInteraction(navigationButtons=T) %>%
   visPhysics(stabilization=F,solver="forceAtlas2Based")
 
