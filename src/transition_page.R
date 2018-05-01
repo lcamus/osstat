@@ -118,32 +118,39 @@ require(visNetwork)
 nodes <- data.frame(id=c(colnames(m),"BEGIN"),
                     label=c(sub("^/\\w+/","",colnames(m)),"BEGIN"),
                     value=c(colSums(m),1),
+                    title=paste0("incoming traffic ",c(colSums(m),0),
+                                "\noutcoming traffic ",c(
+                                  replace(rowSums(m),which(rownames(m) %in% "BEGIN"),0),
+                                  rowSums(m)[which(rownames(m) %in% "BEGIN")])),
                     stringsAsFactors=F)
 nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
 nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
 nodes[nodes$id=="/",]$group <- "shared"
 
-edges <- setNames(data.frame(matrix(ncol = 2, nrow = 0),stringsAsFactors=F),c("from","to"))
+edges <- setNames(data.frame(matrix(ncol=3, nrow=0),stringsAsFactors=F),c("from","to","value"))
 
 invisible(mapply(function(r,c){
-  if (m[r,c]!=0) edges[nrow(edges)+1,] <<- c(rownames(m)[r],colnames(m)[c])
+  if (m[r,c]!=0) edges[nrow(edges)+1,] <<- c(rownames(m)[r],colnames(m)[c],m[r,c])
 },row(m),col(m)))
 
 #display network:
 
-network <- visNetwork(nodes,edges,main="Our statistics",width="100%") %>%
-  visLegend() %>%
-  visOptions(highlightNearest=list(enabled=T, degree=1),nodesIdSelection=T,
+network <- visNetwork(nodes,edges,width="100%",
+                      main=paste0("Our statistics (from ",min(a$date)," to ",max(a$date),")")) %>%
+  visLegend(main="group") %>%
+  visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
              selectedBy=list(variable="group",multiple=T,selected="indicators")) %>%
   visGroups(groupname="indicators",color="#6fb871") %>%
   visGroups(groupname="insights",color="#5cbde3") %>%
   visGroups(groupname="bankscorner",color="#D9685E") %>%
   visGroups(groupname="shared",color="#004996") %>%
   visGroups(groupname="outlink",color="antiquewhite") %>%
-  visGroups(groupname="event",color="darkgray") %>%
+  visGroups(groupname="event",color="black") %>%
   # visEdges(arrows='to') %>%
   visInteraction(navigationButtons=T) %>%
   visPhysics(stabilization=F,solver="forceAtlas2Based")
+
+network
 
 visSave(network, file = "network.html")
 
