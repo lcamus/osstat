@@ -126,25 +126,44 @@ getTitle <- function() {
     else if (node.name=="END")
       bouncing <- "100%"
     else {
-      incoming <- colSums(m[1:nrow,node.name])
-      outcoming <- rowSums(m[node.name,1:ncol(m)-1])
-      bouncing <- round((incoming-outcoming)/incoming*100,0)
-      bouncing <- paste0(as.character(round(bouncing,0)),"%")
+      incoming <- sum(m[1:nrow(m),node.name])
+      outcoming <- sum(m[node.name,1:ncol(m)-1])
+      bouncing <- paste0(as.character(round((incoming-outcoming)/incoming*100,0)),"%")
     }
     return(bouncing)
   }
   
-  getNodes <- function(dir,node.index) {
+  getNode <- function(node.index) {
+    
     depth <- 3
-    if (dir=="incoming")
-      if (node.index==dim(m)[2]+1) #virtual node BEGIN
-        res <- rep("-",3)
-      else {
-        res.node <- names(head(sort(m[,node.index],decreasing=T),depth))
-        res.traffic <- m[res.node,node.index]
-        res.bouncing <- sapply(res.node,function(x) getBouncing(x))
-        res <- c(res.node,res.traffic,res.bouncing)        
-      }
+    
+    #incoming:
+    if (node.index==dim(m)[2]+1) { #virtual node BEGIN
+      incoming <- rep("-",3)
+    } else {
+      incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
+      incoming.traffic <- m[incoming.node,node.index]
+      incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x))
+      incoming <- data.frame(incoming.node,incoming.traffic,incoming.bouncing,stringsAsFactors=F)
+    }
+    
+    #outcoming:
+    if (node.index==dim(m)[2]) { #virtual node END
+      outcoming <- rep("-",3)
+    } else {
+      if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
+      outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
+      outcoming.traffic <- m[node.index,outcoming.node]
+      outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(x))
+      outcoming <- data.frame(outcoming.node,outcoming.traffic,outcoming.bouncing,stringsAsFactors=F)
+    }
+    
+    res <- as.list(apply(bind_cols(incoming,outcoming),1,function(x){
+      tags$tr(lapply(x,tags$td))
+    }))
+    
+    return(res)
+    
   }
   
   incoming <- c(colSums(m),0)
@@ -171,14 +190,21 @@ getTitle <- function() {
         tr(lapply(rep(ntb,2),th))
       ),
       tbody(
-        as.list(apply(io,1,function(y) getNode(y,x)))
+        # getNode(x)
       )
-    ))})
+    ))
+  })
   
-  res <- paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"),
-         "<br><br>incoming traffic ",incoming,
-         "<br>outcoming traffic ",outcoming,
-         "<br>bouncing rate ",bouncing)
+  # res <- paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"),
+  #               "<br><br>incoming traffic ",incoming,
+  #               "<br>outcoming traffic ",outcoming,
+  #               "<br>bouncing rate ",bouncing)
+  res <- tags$div(
+    tags$p(paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"))),
+    tags$p("incoming traffic ",incoming),
+    tags$p("outcoming traffic ",outcoming),
+    tags$p("<br>bouncing rate ",bouncing),
+    sketch)
   return(res)
 }
 
