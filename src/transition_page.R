@@ -118,6 +118,35 @@ require(visNetwork)
 
 getTitle <- function() {
   
+  require(htmltools)
+  
+  getBouncing <- function(node.name) {
+    if (node.name=="BEGIN")
+      bouncing <- "-"
+    else if (node.name=="END")
+      bouncing <- "100%"
+    else {
+      incoming <- colSums(m[1:nrow,node.name])
+      outcoming <- rowSums(m[node.name,1:ncol(m)-1])
+      bouncing <- round((incoming-outcoming)/incoming*100,0)
+      bouncing <- paste0(as.character(round(bouncing,0)),"%")
+    }
+    return(bouncing)
+  }
+  
+  getNodes <- function(dir,node.index) {
+    depth <- 3
+    if (dir=="incoming")
+      if (node.index==dim(m)[2]+1) #virtual node BEGIN
+        res <- rep("-",3)
+      else {
+        res.node <- names(head(sort(m[,node.index],decreasing=T),depth))
+        res.traffic <- m[res.node,node.index]
+        res.bouncing <- sapply(res.node,function(x) getBouncing(x))
+        res <- c(res.node,res.traffic,res.bouncing)        
+      }
+  }
+  
   incoming <- c(colSums(m),0)
   outcoming <- c(rowSums(m[1:nrow(m)-1,1:ncol(m)-1]),0,rowSums(m)[dim(m)[1]])
   bouncing <- round((incoming-outcoming)/incoming*100,0)
@@ -128,6 +157,23 @@ getTitle <- function() {
       res <- paste0(as.character(x),"%")
     return(res)
   })
+  
+  io <- c("incoming","outcoming")
+  ntb <- c("node","traffic","bouncing")
+  
+  sketch <- lapply(1:ncol(m)+1,function(x){
+    htmltools::withTags(table(
+      thead(
+        tr(
+          th(colspan=3,io[1]),
+          th(colspan=3,io[2])
+        ),
+        tr(lapply(rep(ntb,2),th))
+      ),
+      tbody(
+        as.list(apply(io,1,function(y) getNode(y,x)))
+      )
+    ))})
   
   res <- paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"),
          "<br><br>incoming traffic ",incoming,
