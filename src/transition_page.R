@@ -12,7 +12,6 @@ pr2$bad <- NULL
 
 pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/outlink/sdw/datastructure",pr2$pg)
-# pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/bankscorner/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^file:.+$","local",pr2$pg)
 pr2$pg <- sub("^.*www\\.(\\w+\\.)?(ecb|bankingsupervision)\\.europa\\.eu/.*$","/outlink/ECB",pr2$pg)
@@ -29,7 +28,6 @@ pr2$pg <- sub("^.*/www\\.oecd\\.org.*$","/outlink/OECD",pr2$pg)
 pr2$pg <- sub("^.*/www\\.compareyourcountry\\.org.*$","/outlink/OECD",pr2$pg)
 pr2$pg <- sub("^/classic/banks-corner$","/bankscorner/",pr2$pg)
 pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorner/\\1",pr2$pg)
-# pr2$pg <- sub("^.+/banks-corner-(\\w{2,3})/\\w{2,3}codelist\\.xlsx$","/bankscorner/\\1/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^(/classic)?/banks-corner-(\\w{2,3})$","/bankscorner/\\2",pr2$pg)
 pr2$pg <- sub("^/classic/(.+)$","/insights/\\1",pr2$pg)
 pr2$pg <- sub("^/((\\w|-)+)$","/indicators/\\1",pr2$pg)
@@ -46,17 +44,6 @@ pr2[f,]$pg <- strsplit(pr2[f,]$pg,"/(\\w|\\.|\\+)+$")
 rm(f)
 
 pr2$pg <- tolower(pr2$pg)
-
-#merge identical (functional) pages:
-# pages.to.merge <- list(c(26143,27926),c(26149,27854),c(70275,69417))
-# invisible(lapply(pages.to.merge,function(x){
-#   a[which(a$pageIdAction==x[2]),]$pageIdAction <<- x[1]
-#   invisible(lapply(c("n","n.sum"),function(y){
-#     pr2[pr2$pageIdAction==x[1],y] <<- pr2[pr2$pageIdAction==x[1],y] + pr2[pr2$pageIdAction==x[2],y]
-#   }))
-#   pr2 <<- pr2[pr2$pageIdAction!=x[2],]
-# }))
-# rm(pages.to.merge)
 
 #reflect site hierarchy:
 if (file.exists(fSiteHierarchy))
@@ -100,17 +87,18 @@ aa[is.na(aa$pg),]$pg<- "ERR"
 aa$prev.a <- lag(aa$pg)
 aa$next.a <- lead(aa$pg)
 
-aa <- aa %>% group_by(idVisit) %>% mutate(prev.a=ifelse(row_number()==1,NA,prev.a))
-aa <- aa %>% group_by(idVisit) %>% mutate(next.a=ifelse(row_number()==n(),NA,next.a))
+aa <- aa %>% group_by(idVisit) %>% mutate(prev.a=ifelse(row_number()==1,"BEGIN",prev.a))
+aa <- aa %>% group_by(idVisit) %>% mutate(next.a=ifelse(row_number()==n(),"END",next.a))
 
 invisible(apply(aa,1,function(x) {
   val.prev <- x["prev.a"]
   val.next <- x["next.a"]
-  val.next <- ifelse(is.na(val.next),"END",val.next)
+  # val.next <- ifelse(is.na(val.next),"END",val.next)
   val.next <- gsub(" ","",val.next)
   pia <- gsub(" ","",x["pg"])
   m[pia,val.next] <<- m[pia,val.next]+1
-  if(is.na(val.prev))
+  # if(is.na(val.prev))
+  if(val.prev=="BEGIN")
     m["BEGIN",pia] <<- m["BEGIN",pia]+1
 }))
 
@@ -120,17 +108,30 @@ getTitle <- function() {
   
   require(htmltools)
   
-  getBouncing <- function(node.name) {
-    if (node.name=="BEGIN")
+  getBouncing <- function(node.name,noderef.index) {
+  
+    # if (node.name=="BEGIN")
+    #   bouncing <- "-"
+    # else if (node.name=="END")
+    #   bouncing <- "100%"
+    # else {
+    #   incoming <- sum(m[1:nrow(m),node.name])
+    #   outcoming <- sum(m[node.name,1:ncol(m)-1])
+    #   bouncing <- paste0(as.character(round((incoming-outcoming)/incoming*100,0)),"%")
+    # }
+    noderef.name <- c(colnames(m),"BEGIN")[noderef.index]
+    if (noderef.name=="BEGIN")
       bouncing <- "-"
-    else if (node.name=="END")
+    else if (noderef.name=="END")
       bouncing <- "100%"
     else {
-      incoming <- sum(m[1:nrow(m),node.name])
-      outcoming <- sum(m[node.name,1:ncol(m)-1])
-      bouncing <- paste0(as.character(round((incoming-outcoming)/incoming*100,0)),"%")
+      incoming <- nrow(aa[aa$pg==noderef.name & aa$prev.a==node.name,])
+      end.visit <- nrow(aa[aa$pg==noderef.name & aa$prev.a==node.name & aa$next.a=="END",])
+      bouncing <- paste0(as.character(round(100*end.visit/incoming,0)),"%")
     }
+    
     return(bouncing)
+    
   }
   
   getNode <- function(node.index) {
@@ -143,7 +144,7 @@ getTitle <- function() {
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
-      incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x))
+      incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,node.index))
       incoming <- data.frame(incoming.node,incoming.traffic,incoming.bouncing,stringsAsFactors=F)
     }
     
@@ -154,7 +155,7 @@ getTitle <- function() {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
       outcoming.traffic <- m[node.index,outcoming.node]
-      outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(x))
+      outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(x,node.index))
       outcoming <- data.frame(outcoming.node,outcoming.traffic,outcoming.bouncing,stringsAsFactors=F)
     }
     
@@ -209,6 +210,7 @@ getTitle <- function() {
     )
   })
   
+  res <- sapply(res,as.character)
   return(res)
   
 } #getTitle
