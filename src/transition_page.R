@@ -139,7 +139,7 @@ getTitle <- function() {
     
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
-      incoming <- rep("-",3)
+      incoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
@@ -149,7 +149,7 @@ getTitle <- function() {
     
     #outcoming:
     if (node.index==dim(m)[2]) { #virtual node END
-      outcoming <- rep("-",3)
+      outcoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
     } else {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
@@ -180,7 +180,7 @@ getTitle <- function() {
   io <- c("incoming","outcoming")
   ntb <- c("node","traffic","bouncing")
   
-  sketch <- lapply(1:ncol(m)+1,function(x){
+  sketch <- lapply(1:(ncol(m)+1),function(x){
     htmltools::withTags(table(
       thead(
         tr(
@@ -190,7 +190,7 @@ getTitle <- function() {
         tr(lapply(rep(ntb,2),th))
       ),
       tbody(
-        # getNode(x)
+        getNode(x)
       )
     ))
   })
@@ -199,14 +199,19 @@ getTitle <- function() {
   #               "<br><br>incoming traffic ",incoming,
   #               "<br>outcoming traffic ",outcoming,
   #               "<br>bouncing rate ",bouncing)
-  res <- tags$div(
-    tags$p(paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"))),
-    tags$p("incoming traffic ",incoming),
-    tags$p("outcoming traffic ",outcoming),
-    tags$p("<br>bouncing rate ",bouncing),
-    sketch)
+  res <- lapply(seq_along(sketch),function(x){
+    tags$div(
+      tags$p(paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"))[x]),
+      tags$p(paste("incoming traffic",incoming[x])),
+      tags$p(paste("outcoming traffic",outcoming[x])),
+      tags$p(paste("bouncing rate",bouncing[x])),
+      sketch[[x]]
+    )
+  })
+  
   return(res)
-}
+  
+} #getTitle
 
 groups.order <- c("indicators","insights","bankscorner","shared","outlink","event")
 
