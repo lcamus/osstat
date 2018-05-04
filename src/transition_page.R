@@ -10,7 +10,7 @@ url.root <- "https://www.euro-area-statistics.org/"
 pr2 <- pr[pr$bad==F,]
 pr2$bad <- NULL
 
-pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/sdw/\\2",pr2$pg)
+pr2$pg <- sub("^.*sdw-wsrest\\.ecb\\.europa\\.eu/service/data/(\\w{2,3})/(.+)$","/bankscorner/\\1/export/\\2",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.europa\\.eu/datastructure.do$","/outlink/sdw/datastructure",pr2$pg)
 pr2$pg <- sub("^.*sdw\\.ecb\\.(europa\\.eu|int)/(\\w+)?(\\.do)?$","/outlink/sdw/\\2",pr2$pg)
 pr2$pg <- sub("^file:.+$","local",pr2$pg)
@@ -108,25 +108,16 @@ getTitle <- function() {
   
   require(htmltools)
   
-  getBouncing <- function(node.name,noderef.index) {
-  
-    # if (node.name=="BEGIN")
-    #   bouncing <- "-"
-    # else if (node.name=="END")
-    #   bouncing <- "100%"
-    # else {
-    #   incoming <- sum(m[1:nrow(m),node.name])
-    #   outcoming <- sum(m[node.name,1:ncol(m)-1])
-    #   bouncing <- paste0(as.character(round((incoming-outcoming)/incoming*100,0)),"%")
-    # }
-    noderef.name <- c(colnames(m),"BEGIN")[noderef.index]
-    if (noderef.name=="BEGIN")
+  getBouncing <- function(node.incoming,node.outcoming) {
+    
+    if (node.outcoming %in% c("BEGIN","END") | node.incoming=="END")
       bouncing <- "-"
-    else if (noderef.name=="END")
-      bouncing <- "100%"
+    # else if (node.outcoming=="END")
+    #   bouncing <- "100%"
     else {
-      incoming <- nrow(aa[aa$pg==noderef.name & aa$prev.a==node.name,])
-      end.visit <- nrow(aa[aa$pg==noderef.name & aa$prev.a==node.name & aa$next.a=="END",])
+      incoming <- nrow(aa[aa$pg==node.outcoming & aa$prev.a==node.incoming,])
+      end.visit <- nrow(aa[aa$pg==node.outcoming & aa$prev.a==node.incoming & aa$next.a=="END",])
+      bouncing <- round(100*end.visit/incoming,0)
       bouncing <- paste0(as.character(round(100*end.visit/incoming,0)),"%")
     }
     
@@ -144,7 +135,7 @@ getTitle <- function() {
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
-      incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,node.index))
+      incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,c(colnames(m),"BEGIN")[node.index]))
       incoming <- data.frame(incoming.node,incoming.traffic,incoming.bouncing,stringsAsFactors=F)
     }
     
@@ -155,7 +146,7 @@ getTitle <- function() {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
       outcoming.traffic <- m[node.index,outcoming.node]
-      outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(x,node.index))
+      outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(c(colnames(m),"BEGIN")[node.index],x))
       outcoming <- data.frame(outcoming.node,outcoming.traffic,outcoming.bouncing,stringsAsFactors=F)
     }
     
@@ -170,16 +161,16 @@ getTitle <- function() {
   incoming <- c(colSums(m),0)
   outcoming <- c(rowSums(m[1:nrow(m)-1,1:ncol(m)-1]),0,rowSums(m)[dim(m)[1]])
   bouncing <- round((incoming-outcoming)/incoming*100,0)
-  bouncing <- sapply(bouncing,function(x){
-    if (is.infinite(x))
+  bouncing <- sapply(seq_along(bouncing),function(x){
+    if (is.infinite(bouncing[x]) | c(colnames(m),"BEGIN")=="END")
       res <- "-"
     else
-      res <- paste0(as.character(x),"%")
+      res <- paste0(as.character(bouncing[x]),"%")
     return(res)
   })
   
   io <- c("incoming","outcoming")
-  ntb <- c("node","traffic","bouncing")
+  ntb <- c("node","freq","bouncing")
   
   sketch <- lapply(1:(ncol(m)+1),function(x){
     htmltools::withTags(table(
@@ -196,10 +187,6 @@ getTitle <- function() {
     ))
   })
   
-  # res <- paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"),
-  #               "<br><br>incoming traffic ",incoming,
-  #               "<br>outcoming traffic ",outcoming,
-  #               "<br>bouncing rate ",bouncing)
   res <- lapply(seq_along(sketch),function(x){
     tags$div(
       tags$p(paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"))[x]),
