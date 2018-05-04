@@ -38,8 +38,8 @@ invisible(lapply(ncbs,function(x){
   pr2$pg <<- sub(paste0(x,".*$"),"/outlink/NCBs",pr2$pg)
 }))
 
-f <- grep("^/bankscorner/\\w{2,3}/sdw/.+$",pr2$pg)
-pr2[f,]$args <- sub("^/bankscorner/\\w{2,3}/sdw/","",pr2[f,]$pg)
+f <- grep("^/bankscorner/\\w{2,3}/export/.+$",pr2$pg)
+pr2[f,]$args <- sub("^/bankscorner/\\w{2,3}/export/","",pr2[f,]$pg)
 pr2[f,]$pg <- strsplit(pr2[f,]$pg,"/(\\w|\\.|\\+)+$")
 rm(f)
 
@@ -112,8 +112,6 @@ getTitle <- function() {
     
     if (node.outcoming %in% c("BEGIN","END") | node.incoming=="END")
       bouncing <- "-"
-    # else if (node.outcoming=="END")
-    #   bouncing <- "100%"
     else {
       incoming <- nrow(aa[aa$pg==node.outcoming & aa$prev.a==node.incoming,])
       end.visit <- nrow(aa[aa$pg==node.outcoming & aa$prev.a==node.incoming & aa$next.a=="END",])
@@ -162,7 +160,7 @@ getTitle <- function() {
   outcoming <- c(rowSums(m[1:nrow(m)-1,1:ncol(m)-1]),0,rowSums(m)[dim(m)[1]])
   bouncing <- round((incoming-outcoming)/incoming*100,0)
   bouncing <- sapply(seq_along(bouncing),function(x){
-    if (is.infinite(bouncing[x]) | c(colnames(m),"BEGIN")=="END")
+    if (is.infinite(bouncing[x]) | c(colnames(m),"BEGIN")[x]=="END")
       res <- "-"
     else
       res <- paste0(as.character(bouncing[x]),"%")
@@ -188,13 +186,16 @@ getTitle <- function() {
   })
   
   res <- lapply(seq_along(sketch),function(x){
-    tags$div(
-      tags$p(paste0(c(gsub("/"," > ",sub("/$","",sub("^/","",colnames(m)))),"BEGIN"))[x]),
-      tags$p(paste("incoming traffic",incoming[x])),
-      tags$p(paste("outcoming traffic",outcoming[x])),
-      tags$p(paste("bouncing rate",bouncing[x])),
+    lib <- paste0(gsub("/"," > ",sub("/$","",sub("^/","",c(colnames(m),"BEGIN")[x]))))
+    return(htmltools::withTags(div(
+      h3(lib),
+      table(tr(
+        td(paste("incoming traffic",strong(incoming[x]))),
+        td(paste("outcoming traffic",strong(outcoming[x]))),
+        td(paste("bouncing rate",strong(bouncing[x])))
+      )),
       sketch[[x]]
-    )
+    )))
   })
   
   res <- sapply(res,as.character)
