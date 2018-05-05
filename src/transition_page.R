@@ -262,9 +262,13 @@ genNetwork <- function(m) {
     visPhysics(stabilization=F,solver="forceAtlas2Based")
   
   invisible(apply(groups,1,function(x){
-    network <<- network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2]))
+    # network <- network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2]))
+    assign("network",
+           network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2])),
+           envir=parent.env(environment()))
   }))
   
+  return(network)
   
 } #genNetwork
 
@@ -275,7 +279,7 @@ displayNetwork <- function(n) {
       tags$head(
         tags$style("span.bold {font-weight:bold;}")
       ),
-      network
+      n
     ))
   )
   
@@ -284,9 +288,9 @@ displayNetwork <- function(n) {
 pr2 <- extendRepositoryPage()
 aa <- extendActions(pr2)
 m <- genTransitionMatrix(pr2,aa)
-network <- genNetwork(m)
+n <- genNetwork(m)
 
-displayNetwork(network)
+displayNetwork(n)
 
 # visSave(network, file = "network.html")
 
