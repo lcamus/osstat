@@ -120,6 +120,7 @@ genTransitionMatrix <- function(pr2,aa) {
 
 genNetwork <- function(m) {
   
+  # suppressPackageStartupMessages(require(dplyr))
   require(visNetwork)
   
   getTitle <- function() {
@@ -143,7 +144,7 @@ genNetwork <- function(m) {
     
     getNode <- function(node.index) {
       
-      depth <- 3
+      depth <- ncol(m)+1
       
       #incoming:
       if (node.index==dim(m)[2]+1) { #virtual node BEGIN
@@ -166,13 +167,22 @@ genNetwork <- function(m) {
         outcoming <- data.frame(outcoming.node,outcoming.traffic,outcoming.bouncing,stringsAsFactors=F)
       }
       
-      res <- as.list(apply(bind_cols(incoming,outcoming),1,function(x){
-        tags$tr(lapply(x,tags$td))
-      }))
+      io <- c("incoming","outcoming")
+      ntb <- c("node","freq","bouncing")
+      
+      require(DT)
+      res <- list(
+        datatable(incoming,colnames=ntb,options=list(pageLength=5)),
+        datatable(outcoming,colnames=ntb,options=list(pageLength=5))
+      )
+      
+      # res <- as.list(apply(bind_cols(incoming,outcoming),1,function(x){
+      #   tags$tr(lapply(x,tags$td))
+      # }))
       
       return(res)
       
-    }
+    } #getNode
     
     incoming <- c(colSums(m),0)
     outcoming <- c(rowSums(m[1:nrow(m)-1,1:ncol(m)-1]),0,rowSums(m)[dim(m)[1]])
@@ -185,22 +195,23 @@ genNetwork <- function(m) {
       return(res)
     })
     
-    io <- c("incoming","outcoming")
-    ntb <- c("node","freq","bouncing")
+    # io <- c("incoming","outcoming")
+    # ntb <- c("node","freq","bouncing")
     
     sketch <- lapply(1:(ncol(m)+1),function(x){
-      htmltools::withTags(table(
-        thead(
-          tr(
-            th(colspan=3,io[1]),
-            th(colspan=3,io[2])
-          ),
-          tr(lapply(rep(ntb,2),th))
-        ),
-        tbody(
-          getNode(x)
-        )
-      ))
+      # htmltools::withTags(table(
+      #   thead(
+      #     tr(
+      #       th(colspan=3,io[1]),
+      #       th(colspan=3,io[2])
+      #     ),
+      #     tr(lapply(rep(ntb,2),th))
+      #   ),
+      #   tbody(
+      #     getNode(x)
+      #   )
+      # ))
+      getNode(x)
     })
     
     res <- lapply(seq_along(sketch),function(x){
@@ -208,9 +219,9 @@ genNetwork <- function(m) {
       return(htmltools::withTags(div(
         h3(lib),
         table(tr(
-          td(paste("incoming traffic",span(incoming[x],class="bold"))),
-          td(paste("outcoming traffic",span(outcoming[x],class="bold"))),
-          td(paste("bouncing rate",span(bouncing[x],class="bold")))
+          td("incoming traffic",span(incoming[x],class="bold")),
+          td("outcoming traffic",span(outcoming[x],class="bold")),
+          td("bouncing rate",span(bouncing[x],class="bold"))
         )),
         sketch[[x]]
       )))
@@ -273,6 +284,9 @@ genNetwork <- function(m) {
 } #genNetwork
 
 displayNetwork <- function(n) {
+  
+  require(visNetwork)
+  require(htmltools)
   
   browsable(
     tagList(list(
