@@ -144,7 +144,8 @@ genNetwork <- function(m) {
     
     getNode <- function(node.index) {
       
-      depth <- ncol(m)+1
+      # depth <- ncol(m)+1
+      depth <- 3
       
       #incoming:
       if (node.index==dim(m)[2]+1) { #virtual node BEGIN
@@ -172,7 +173,7 @@ genNetwork <- function(m) {
       
       require(DT)
       res <- list(
-        datatable(incoming,colnames=ntb,options=list(pageLength=5)),
+        # datatable(incoming,colnames=ntb,options=list(pageLength=5)),
         datatable(outcoming,colnames=ntb,options=list(pageLength=5))
       )
       
@@ -283,6 +284,73 @@ genNetwork <- function(m) {
   
 } #genNetwork
 
+genDatatables <- function(m) {
+  
+  require(htmltools)
+  
+  getBouncing <- function(node.incoming,node.outcoming) {
+    
+    if (node.outcoming %in% c("BEGIN","END") | node.incoming=="END")
+      bouncing <- "-"
+    else {
+      incoming <- nrow(aa[aa$pg==node.outcoming & aa$prev.a==node.incoming,])
+      end.visit <- nrow(aa[aa$pg==node.outcoming & aa$prev.a==node.incoming & aa$next.a=="END",])
+      bouncing <- round(100*end.visit/incoming,0)
+      bouncing <- paste0(as.character(round(100*end.visit/incoming,0)),"%")
+    }
+    
+    return(bouncing)
+    
+  }
+  
+  getNode <- function(node.index) {
+    
+    depth <- ncol(m)
+    
+    #incoming:
+    if (node.index==dim(m)[2]+1) { #virtual node BEGIN
+      incoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
+    } else {
+      incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
+      incoming.traffic <- m[incoming.node,node.index]
+      incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,c(colnames(m),"BEGIN")[node.index]))
+      incoming <- data.frame(rep(node.index,depth),incoming.node,incoming.traffic,incoming.bouncing,stringsAsFactors=F)
+    }
+    
+    #outcoming:
+    if (node.index==dim(m)[2]) { #virtual node END
+      outcoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
+    } else {
+      if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
+      outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
+      outcoming.traffic <- m[node.index,outcoming.node]
+      outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(c(colnames(m),"BEGIN")[node.index],x))
+      outcoming <- data.frame(rep(node.index,depth),outcoming.node,outcoming.traffic,outcoming.bouncing,stringsAsFactors=F)
+    }
+    
+    rnfb <- c("ref","node","freq","bouncing")
+    
+    # require(DT)
+    res <- list(
+      # datatable(incoming,colnames=rnfb,options=list(pageLength=5)),
+      # datatable(outcoming,colnames=rnfb,options=list(pageLength=5))
+      incoming,
+      outcoming
+    )
+    
+    return(res)
+    
+  } #getNode
+  
+  gotnodes <- lapply(1:(ncol(m)+1),function(x){
+    getNode(x)
+  })
+  
+  res <- lapply(gotnodes,`[[`,1)
+  return(res)
+  
+} #genDatatables
+
 displayNetwork <- function(n) {
   
   require(visNetwork)
@@ -306,6 +374,8 @@ n <- genNetwork(m)
 
 displayNetwork(n)
 
-# visSave(network, file = "network.html")
+visSave(n, file = "network.html")
+
+genDatatables(m)
 
 
