@@ -348,8 +348,24 @@ genSrcDatatables <- function(m) {
 
 genDatatables <- function(t,cap) {
   require(DT)
-  res <- datatable(t,options=list(pageLength=5),rownames=F,caption=cap,
-                   callback=JS('dataTable( {"scrollY": "200px",} );'))
+  require(htmltools)
+  res <- datatable(t,rownames=F,caption=em(cap),height=250,width=500,fillContainer=F,autoHideNavigation=T,
+                   filter="none",
+                   # callback=JS('table.table().container().to$().css({height: "200px"});'),
+                   options=list(pageLength=5,dom = 'ltipr',
+                                columnDefs = list(list(visible=FALSE, targets=c(0)),
+                                                  list(width = '200px', targets = c(1)),
+                                                  list(width = '50px', targets = c(2,3))
+                                                  )
+                                # initComplete = JS("
+                                #   function(settings, json) {
+                                #     $(this.api().table().container()).css({
+                                #        'height': '250px',
+                                #        'color': 'red'
+                                #     });
+                                #     $(this.api().draw());
+                                #   }")
+                   ))
   return(res)
 } #genDatatables
 
@@ -372,6 +388,8 @@ displayNetwork <- function(n,t) {
           tags$tr(
             tags$td(t[[2]],width="30%")
           )
+          # ,
+          # style="height:250px;"
         )
       )
     ))
