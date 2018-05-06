@@ -286,7 +286,7 @@ genNetwork <- function(m) {
 
 genDatatables <- function(m) {
   
-  require(htmltools)
+  # require(htmltools)
   
   getBouncing <- function(node.incoming,node.outcoming) {
     
@@ -309,23 +309,25 @@ genDatatables <- function(m) {
     
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
-      incoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
+      # incoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
+      incoming <- data.frame(matrix(c(as.character(node.index),rep("-",3)),nrow=1),stringsAsFactors=F)
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
       incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,c(colnames(m),"BEGIN")[node.index]))
-      incoming <- data.frame(rep(node.index,depth),incoming.node,incoming.traffic,incoming.bouncing,stringsAsFactors=F)
+      incoming <- data.frame(rep(as.character(node.index),depth),incoming.node,as.character(incoming.traffic),incoming.bouncing,stringsAsFactors=F)
     }
     
     #outcoming:
     if (node.index==dim(m)[2]) { #virtual node END
-      outcoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
+      # outcoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
+      outcoming <- data.frame(matrix(c(as.character(node.index),rep("-",3)),nrow=1),stringsAsFactors=F)
     } else {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
       outcoming.traffic <- m[node.index,outcoming.node]
       outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(c(colnames(m),"BEGIN")[node.index],x))
-      outcoming <- data.frame(rep(node.index,depth),outcoming.node,outcoming.traffic,outcoming.bouncing,stringsAsFactors=F)
+      outcoming <- data.frame(rep(as.character(node.index),depth),outcoming.node,as.character(outcoming.traffic),outcoming.bouncing,stringsAsFactors=F)
     }
     
     rnfb <- c("ref","node","freq","bouncing")
@@ -334,8 +336,8 @@ genDatatables <- function(m) {
     res <- list(
       # datatable(incoming,colnames=rnfb,options=list(pageLength=5)),
       # datatable(outcoming,colnames=rnfb,options=list(pageLength=5))
-      incoming,
-      outcoming
+      setNames(incoming[incoming[,3]!="0",],rnfb),
+      setNames(outcoming[outcoming[,3]!="0",],rnfb)
     )
     
     return(res)
@@ -346,7 +348,10 @@ genDatatables <- function(m) {
     getNode(x)
   })
   
-  res <- lapply(gotnodes,`[[`,1)
+  res <- list(
+    bind_rows(lapply(gotnodes,`[[`,1)),
+    bind_rows(lapply(gotnodes,`[[`,2))
+  )
   return(res)
   
 } #genDatatables
@@ -376,6 +381,6 @@ displayNetwork(n)
 
 visSave(n, file = "network.html")
 
-genDatatables(m)
+x<-genDatatables(m)
 
 
