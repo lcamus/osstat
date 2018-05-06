@@ -120,7 +120,6 @@ genTransitionMatrix <- function(pr2,aa) {
 
 genNetwork <- function(m) {
   
-  # suppressPackageStartupMessages(require(dplyr))
   require(visNetwork)
   
   getTitle <- function() {
@@ -284,9 +283,9 @@ genNetwork <- function(m) {
   
 } #genNetwork
 
-genDatatables <- function(m) {
+genSrcDatatables <- function(m) {
   
-  # require(htmltools)
+  suppressPackageStartupMessages(require(dplyr))
   
   getBouncing <- function(node.incoming,node.outcoming) {
     
@@ -332,10 +331,7 @@ genDatatables <- function(m) {
     
     rnfb <- c("ref","node","freq","bouncing")
     
-    # require(DT)
     res <- list(
-      # datatable(incoming,colnames=rnfb,options=list(pageLength=5)),
-      # datatable(outcoming,colnames=rnfb,options=list(pageLength=5))
       setNames(incoming[incoming[,3]!="0",],rnfb),
       setNames(outcoming[outcoming[,3]!="0",],rnfb)
     )
@@ -354,9 +350,15 @@ genDatatables <- function(m) {
   )
   return(res)
   
+} #genSrcDatatables
+
+genDatatables <- function(t) {
+  require(DT)
+  res <- datatable(t,options=list(pageLength=5),rownames=F)
+  return(res)
 } #genDatatables
 
-displayNetwork <- function(n) {
+displayNetwork <- function(n,t) {
   
   require(visNetwork)
   require(htmltools)
@@ -366,7 +368,9 @@ displayNetwork <- function(n) {
       tags$head(
         tags$style("span.bold {font-weight:bold;}")
       ),
-      n
+      n,
+      t[[1]],
+      t[[2]]
     ))
   )
   
@@ -376,8 +380,10 @@ pr2 <- extendRepositoryPage()
 aa <- extendActions(pr2)
 m <- genTransitionMatrix(pr2,aa)
 n <- genNetwork(m)
+sd <- genSrcDatatables(m)
+t <- lapply(sd,genDatatables)
 
-displayNetwork(n)
+displayNetwork(n,t)
 
 visSave(n, file = "network.html")
 
