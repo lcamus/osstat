@@ -167,18 +167,12 @@ genNetwork <- function(m) {
         outcoming <- data.frame(outcoming.node,outcoming.traffic,outcoming.bouncing,stringsAsFactors=F)
       }
       
-      io <- c("incoming","outcoming")
       ntb <- c("node","freq","bouncing")
       
       require(DT)
       res <- list(
-        # datatable(incoming,colnames=ntb,options=list(pageLength=5)),
         datatable(outcoming,colnames=ntb,options=list(pageLength=5))
       )
-      
-      # res <- as.list(apply(bind_cols(incoming,outcoming),1,function(x){
-      #   tags$tr(lapply(x,tags$td))
-      # }))
       
       return(res)
       
@@ -222,8 +216,9 @@ genNetwork <- function(m) {
           td("incoming traffic",span(incoming[x],class="bold")),
           td("outcoming traffic",span(outcoming[x],class="bold")),
           td("bouncing rate",span(bouncing[x],class="bold"))
-        )),
-        sketch[[x]]
+        ))
+        # ,
+        # sketch[[x]]
       )))
     })
     
@@ -264,7 +259,7 @@ genNetwork <- function(m) {
   lnodes <- data.frame(label=groups$label,color=groups$color,shape="square",
                        title=groups$desc)
   
-  network <- visNetwork(nodes,edges,width="100%",
+  network <- visNetwork(nodes,edges,
                         main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
     visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
     visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
@@ -273,7 +268,6 @@ genNetwork <- function(m) {
     visPhysics(stabilization=F,solver="forceAtlas2Based")
   
   invisible(apply(groups,1,function(x){
-    # network <- network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2]))
     assign("network",
            network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2])),
            envir=parent.env(environment()))
@@ -352,9 +346,10 @@ genSrcDatatables <- function(m) {
   
 } #genSrcDatatables
 
-genDatatables <- function(t) {
+genDatatables <- function(t,cap) {
   require(DT)
-  res <- datatable(t,options=list(pageLength=5),rownames=F)
+  res <- datatable(t,options=list(pageLength=5),rownames=F,caption=cap,
+                   callback=JS('dataTable( {"scrollY": "200px",} );'))
   return(res)
 } #genDatatables
 
@@ -368,9 +363,17 @@ displayNetwork <- function(n,t) {
       tags$head(
         tags$style("span.bold {font-weight:bold;}")
       ),
-      n,
-      t[[1]],
-      t[[2]]
+      tags$body(
+        tags$table(
+          tags$tr(
+            tags$td(n,rowspan=2,width="70%",valign="top"),
+            tags$td(t[[1]],width="30%")
+          ),
+          tags$tr(
+            tags$td(t[[2]],width="30%")
+          )
+        )
+      )
     ))
   )
   
@@ -381,7 +384,7 @@ aa <- extendActions(pr2)
 m <- genTransitionMatrix(pr2,aa)
 n <- genNetwork(m)
 sd <- genSrcDatatables(m)
-t <- lapply(sd,genDatatables)
+t <- lapply(seq_along(sd),function(x)genDatatables(sd[[x]],c("Incoming","Outcoming")[x]))
 
 displayNetwork(n,t)
 
