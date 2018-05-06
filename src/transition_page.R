@@ -349,6 +349,7 @@ genSrcDatatables <- function(m) {
 genDatatables <- function(t,cap) {
   require(DT)
   require(htmltools)
+  
   res <- datatable(t,rownames=F,caption=em(cap),height=250,width=500,fillContainer=F,autoHideNavigation=T,
                    filter="none",
                    # callback=JS('table.table().container().to$().css({height: "200px"});'),
@@ -356,7 +357,7 @@ genDatatables <- function(t,cap) {
                                 columnDefs = list(list(visible=FALSE, targets=c(0)),
                                                   list(width = '200px', targets = c(1)),
                                                   list(width = '50px', targets = c(2,3))
-                                                  )
+                                )
                                 # initComplete = JS("
                                 #   function(settings, json) {
                                 #     $(this.api().table().container()).css({
@@ -366,7 +367,14 @@ genDatatables <- function(t,cap) {
                                 #     $(this.api().draw());
                                 #   }")
                    ))
+  %>% formatStyle(
+    'group',
+    target = 'row',
+    backgroundColor = styleEqual(c(0, 1), c('gray', 'yellow'))
+  )
+  
   return(res)
+  
 } #genDatatables
 
 displayNetwork <- function(n,t) {
