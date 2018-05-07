@@ -370,8 +370,8 @@ genDatatables <- function(t,cap) {
                                 )
                    )) %>%
     formatStyle(
-      'group',
-      target = "row",
+      "node","group",
+      # target = "row",
       backgroundColor = styleEqual(groups$label,groups$color)
     )
   
