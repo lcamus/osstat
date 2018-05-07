@@ -302,7 +302,7 @@ genSrcDatatables <- function(m) {
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
       # incoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
-      incoming <- data.frame(matrix(c(as.character(node.index),rep("-",3)),nrow=1),stringsAsFactors=F)
+      incoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",3)),nrow=1),stringsAsFactors=F)
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
@@ -318,7 +318,7 @@ genSrcDatatables <- function(m) {
     #outcoming:
     if (node.index==dim(m)[2]) { #virtual node END
       # outcoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
-      outcoming <- data.frame(matrix(c(as.character(node.index),rep("-",3)),nrow=1),stringsAsFactors=F)
+      outcoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",3)),nrow=1),stringsAsFactors=F)
     } else {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
