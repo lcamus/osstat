@@ -276,7 +276,7 @@ genNetwork <- function(m) {
   
 } #genNetwork
 
-genSrcDatatables <- function(m) {
+genSrcDatatables <- function(m,nodes.ref) {
   
   suppressPackageStartupMessages(require(dplyr))
   
@@ -308,7 +308,8 @@ genSrcDatatables <- function(m) {
       incoming.traffic <- m[incoming.node,node.index]
       incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,c(colnames(m),"BEGIN")[node.index]))
       incoming <- data.frame(rep(as.character(node.index),depth),
-                             sub("^/(\\w+)/?.*$","\\1",incoming.node),
+                             # sub("^/(\\w+)/?.*$","\\1",incoming.node),
+                             left_join(setNames(data.frame(matrix(incoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
                              incoming.node,
                              as.character(incoming.traffic),
                              incoming.bouncing,
@@ -325,7 +326,8 @@ genSrcDatatables <- function(m) {
       outcoming.traffic <- m[node.index,outcoming.node]
       outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(c(colnames(m),"BEGIN")[node.index],x))
       outcoming <- data.frame(rep(as.character(node.index),depth),
-                              sub("^/(\\w+)/?.*$","\\1",outcoming.node),
+                              # sub("^/(\\w+)/?.*$","\\1",outcoming.node),
+                              left_join(setNames(data.frame(matrix(outcoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
                               outcoming.node,
                               as.character(outcoming.traffic),
                               outcoming.bouncing,
@@ -361,7 +363,7 @@ genDatatables <- function(t,cap) {
   
   res <- datatable(t,rownames=F,caption=em(cap),height=250,width=500,fillContainer=F,autoHideNavigation=T,
                    filter="none",
-                   options=list(pageLength=5,dom = 'ltipr',
+                   options=list(pageLength=5,dom = 'tipr',
                                 columnDefs = list(list(visible=FALSE, targets=c(0,1)),
                                                   list(width = '200px', targets = c(1)),
                                                   list(width = '50px', targets = c(2,3))
@@ -369,7 +371,7 @@ genDatatables <- function(t,cap) {
                    )) %>%
     formatStyle(
       'group',
-      target = 'row',
+      target = "row",
       backgroundColor = styleEqual(groups$label,groups$color)
     )
   
@@ -409,7 +411,7 @@ pr2 <- extendRepositoryPage()
 aa <- extendActions(pr2)
 m <- genTransitionMatrix(pr2,aa)
 n <- genNetwork(m)
-sd <- genSrcDatatables(m)
+sd <- genSrcDatatables(m,n$x$nodes)
 t <- lapply(seq_along(sd),function(x)genDatatables(sd[[x]],c("Incoming","Outcoming")[x]))
 
 displayNetwork(n,t)
