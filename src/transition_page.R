@@ -1,5 +1,13 @@
 #matrix transition pageIdAction
 
+groups <- data.frame(label=c("indicators","insights","bankscorner","shared","outlink","event"),
+                     color=c("#6fb871","#5cbde3","#D9685E","#004996","darkorange","darkmagenta"),
+                     desc=c("indicators","Insights into euro area statistics","Banks' Corner",
+                            "shared pages and features (incl. homepage)",
+                            "outlinks to external pages (institutional websites and web ressources)",
+                            "events related to visit (begin, end, error and save to local)"
+                     ),stringsAsFactors=F)
+
 extendRepositoryPage <- function() {
   
   suppressPackageStartupMessages(require(dplyr))
@@ -227,8 +235,6 @@ genNetwork <- function(m) {
     
   } #getTitle
   
-  groups.order <- c("indicators","insights","bankscorner","shared","outlink","event")
-  
   nodes <- data.frame(id=c(colnames(m),"BEGIN"),
                       label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
                       value=c(colSums(m),rowSums(m)[dim(m)[1]]),
@@ -239,7 +245,7 @@ genNetwork <- function(m) {
   nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
   nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
   nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
-  nodes <- nodes[unlist(lapply(groups.order,function(x) which(nodes$group %in% x))),]
+  nodes <- nodes[unlist(lapply(groups$label,function(x) which(nodes$group %in% x))),]
   
   edges <- setNames(data.frame(matrix(ncol=3, nrow=0),stringsAsFactors=F),c("from","to","value"))
   
@@ -249,13 +255,6 @@ genNetwork <- function(m) {
   
   #
   
-  groups <- data.frame(label=groups.order,
-                       color=c("#6fb871","#5cbde3","#D9685E","#004996","darkorange","darkmagenta"),
-                       desc=c("indicators","Insights into euro area statistics","Banks' Corner",
-                              "shared pages and features (incl. homepage)",
-                              "outlinks to external pages (institutional websites and web ressources)",
-                              "events related to visit (begin, end, error and save to local)"
-                       ),stringsAsFactors=F)
   lnodes <- data.frame(label=groups$label,color=groups$color,shape="square",
                        title=groups$desc)
   
@@ -263,7 +262,7 @@ genNetwork <- function(m) {
                         main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
     visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
     visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
-               selectedBy=list(variable="group",selected="indicators",values=groups.order)) %>%
+               selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
     visInteraction(navigationButtons=T) %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based")
   
@@ -308,7 +307,12 @@ genSrcDatatables <- function(m) {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
       incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,c(colnames(m),"BEGIN")[node.index]))
-      incoming <- data.frame(rep(as.character(node.index),depth),incoming.node,as.character(incoming.traffic),incoming.bouncing,stringsAsFactors=F)
+      incoming <- data.frame(rep(as.character(node.index),depth),
+                             sub("^/(\\w+)/?.*$","\\1",incoming.node),
+                             incoming.node,
+                             as.character(incoming.traffic),
+                             incoming.bouncing,
+                             stringsAsFactors=F)
     }
     
     #outcoming:
@@ -320,14 +324,19 @@ genSrcDatatables <- function(m) {
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
       outcoming.traffic <- m[node.index,outcoming.node]
       outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(c(colnames(m),"BEGIN")[node.index],x))
-      outcoming <- data.frame(rep(as.character(node.index),depth),outcoming.node,as.character(outcoming.traffic),outcoming.bouncing,stringsAsFactors=F)
+      outcoming <- data.frame(rep(as.character(node.index),depth),
+                              sub("^/(\\w+)/?.*$","\\1",outcoming.node),
+                              outcoming.node,
+                              as.character(outcoming.traffic),
+                              outcoming.bouncing,
+                              stringsAsFactors=F)
     }
     
-    rnfb <- c("ref","node","freq","bouncing")
+    rnfb <- c("ref","group","node","freq","bouncing")
     
     res <- list(
-      setNames(incoming[incoming[,3]!="0",],rnfb),
-      setNames(outcoming[outcoming[,3]!="0",],rnfb)
+      setNames(incoming[incoming[,4]!="0",],rnfb),
+      setNames(outcoming[outcoming[,4]!="0",],rnfb)
     )
     
     return(res)
@@ -352,26 +361,17 @@ genDatatables <- function(t,cap) {
   
   res <- datatable(t,rownames=F,caption=em(cap),height=250,width=500,fillContainer=F,autoHideNavigation=T,
                    filter="none",
-                   # callback=JS('table.table().container().to$().css({height: "200px"});'),
                    options=list(pageLength=5,dom = 'ltipr',
-                                columnDefs = list(list(visible=FALSE, targets=c(0)),
+                                columnDefs = list(list(visible=FALSE, targets=c(0,1)),
                                                   list(width = '200px', targets = c(1)),
                                                   list(width = '50px', targets = c(2,3))
                                 )
-                                # initComplete = JS("
-                                #   function(settings, json) {
-                                #     $(this.api().table().container()).css({
-                                #        'height': '250px',
-                                #        'color': 'red'
-                                #     });
-                                #     $(this.api().draw());
-                                #   }")
-                   ))
-  %>% formatStyle(
-    'group',
-    target = 'row',
-    backgroundColor = styleEqual(c(0, 1), c('gray', 'yellow'))
-  )
+                   )) %>%
+    formatStyle(
+      'group',
+      target = 'row',
+      backgroundColor = styleEqual(groups$label,groups$color)
+    )
   
   return(res)
   
