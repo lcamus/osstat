@@ -238,7 +238,7 @@ genNetwork <- function(m) {
   nodes <- data.frame(id=c(colnames(m),"BEGIN"),
                       label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
                       value=c(colSums(m),rowSums(m)[dim(m)[1]]),
-                      title=getTitle(),
+                      # title=getTitle(),
                       stringsAsFactors=F)
   nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
   nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
@@ -258,13 +258,17 @@ genNetwork <- function(m) {
   lnodes <- data.frame(label=groups$label,color=groups$color,shape="square",
                        title=groups$desc)
   
+  func <- "function(properties) {
+              alert('selected nodes ' + this.body.data.nodes.get(properties.nodes[0]).id);}"
+  
   network <- visNetwork(nodes,edges,
                         main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
     visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
     visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
                selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
-    visInteraction(navigationButtons=T) %>%
-    visPhysics(stabilization=F,solver="forceAtlas2Based")
+    visInteraction(navigationButtons=T,hover=T) %>%
+    visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
+    visEvents(hoverNode="function(e) {alert(e.node);}")
   
   invisible(apply(groups,1,function(x){
     assign("network",
