@@ -302,15 +302,14 @@ genSrcDatatables <- function(m,nodes.ref) {
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
       # incoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
-      incoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",3)),nrow=1),stringsAsFactors=F)
+      incoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
       incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,c(colnames(m),"BEGIN")[node.index]))
       incoming <- data.frame(rep(as.character(node.index),depth),
-                             # sub("^/(\\w+)/?.*$","\\1",incoming.node),
                              left_join(setNames(data.frame(matrix(incoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
-                             # incoming.node,
+                             paste0("#",1:depth),
                              sub("^[a-z]+/(.+)$","\\1",sub("^/(.+)","\\1",incoming.node)),
                              as.character(incoming.traffic),
                              incoming.bouncing,
@@ -320,27 +319,26 @@ genSrcDatatables <- function(m,nodes.ref) {
     #outcoming:
     if (node.index==dim(m)[2]) { #virtual node END
       # outcoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
-      outcoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",3)),nrow=1),stringsAsFactors=F)
+      outcoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
     } else {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
       outcoming.traffic <- m[node.index,outcoming.node]
       outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(c(colnames(m),"BEGIN")[node.index],x))
       outcoming <- data.frame(rep(as.character(node.index),depth),
-                              # sub("^/(\\w+)/?.*$","\\1",outcoming.node),
                               left_join(setNames(data.frame(matrix(outcoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
-                              # outcoming.node,
+                              paste0("#",1:depth),
                               sub("^[a-z]+/(.+)$","\\1",sub("^/(.+)","\\1",outcoming.node)),
                               as.character(outcoming.traffic),
                               outcoming.bouncing,
                               stringsAsFactors=F)
     }
     
-    rnfb <- c("ref","group","node","freq","bouncing")
+    rnfb <- c("ref","group","rank","node","freq","bouncing")
     
     res <- list(
-      setNames(incoming[incoming[,4]!="0",],rnfb),
-      setNames(outcoming[outcoming[,4]!="0",],rnfb)
+      setNames(incoming[incoming[,5]!="0",],rnfb),
+      setNames(outcoming[outcoming[,5]!="0",],rnfb)
     )
     
     return(res)
@@ -363,25 +361,25 @@ genDatatables <- function(t,cap) {
   require(DT)
   require(htmltools)
   
-  res <- datatable(t,rownames=F,height=250,width=500,fillContainer=F,autoHideNavigation=T,
-                   filter="none",
+  res <- datatable(t,rownames=F,height=250,width=600,fillContainer=F,autoHideNavigation=T,
+                   filter="none",class="compact",
                    caption=htmltools::tags$caption(
                      # style = 'caption-side: top; text-align: center;',
                      htmltools::em(cap)
                    ),
-                   options=list(pageLength=5,dom = 'tipr',
+                   options=list(pageLength=5,dom = 'tpr',autoWidth=T,
                                 columnDefs = list(list(visible=FALSE, targets=0),
-                                                  list(width = '10px', targets=1),
-                                                  list(width = '200px', targets=2),
-                                                  list(width = '25px', targets=c(3,4)),
+                                                  list(width = '10px', targets=c(1,2)),
+                                                  list(width = '200px', targets=3),
+                                                  list(width = '25px', targets=c(4,5)),
                                                   list(
-                                                    targets=2,
+                                                    targets=3,
                                                     render = JS(
                                                       "function(data, type, row, meta) {",
                                                       "return type === 'display' && data.length > 30 ?",
                                                       "'<span title=\"' + data + '\">' + data.substr(0, 30) + '...</span>' : data;",
                                                       "}")),
-                                                  list(className = 'dt-center', targets=c(3,4))
+                                                  list(className = 'dt-center', targets=c(4,5))
                                 )
                    )) %>%
     formatStyle(
@@ -404,7 +402,8 @@ displayNetwork <- function(n,t) {
     tagList(list(
       tags$head(
         tags$style('span.bold {font-weight:bold;}
-                   * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;}')
+                   * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;}'
+                   )
       ),
       tags$body(
         tags$table(
@@ -415,8 +414,10 @@ displayNetwork <- function(n,t) {
           tags$tr(
             tags$td(t[[2]],width="30%")
           )
-          # ,
-          # style="height:250px;"
+          ,
+          style=".dataTables_paginate {
+                   float: left !important;
+                   color: red !important;}"
         )
       )
     ))
