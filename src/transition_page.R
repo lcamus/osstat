@@ -310,7 +310,8 @@ genSrcDatatables <- function(m,nodes.ref) {
       incoming <- data.frame(rep(as.character(node.index),depth),
                              # sub("^/(\\w+)/?.*$","\\1",incoming.node),
                              left_join(setNames(data.frame(matrix(incoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
-                             incoming.node,
+                             # incoming.node,
+                             sub("^[a-z]+/(.+)$","\\1",sub("^/(.+)","\\1",incoming.node)),
                              as.character(incoming.traffic),
                              incoming.bouncing,
                              stringsAsFactors=F)
@@ -328,7 +329,8 @@ genSrcDatatables <- function(m,nodes.ref) {
       outcoming <- data.frame(rep(as.character(node.index),depth),
                               # sub("^/(\\w+)/?.*$","\\1",outcoming.node),
                               left_join(setNames(data.frame(matrix(outcoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
-                              outcoming.node,
+                              # outcoming.node,
+                              sub("^[a-z]+/(.+)$","\\1",sub("^/(.+)","\\1",outcoming.node)),
                               as.character(outcoming.traffic),
                               outcoming.bouncing,
                               stringsAsFactors=F)
@@ -361,18 +363,32 @@ genDatatables <- function(t,cap) {
   require(DT)
   require(htmltools)
   
-  res <- datatable(t,rownames=F,caption=em(cap),height=250,width=500,fillContainer=F,autoHideNavigation=T,
+  res <- datatable(t,rownames=F,height=250,width=500,fillContainer=F,autoHideNavigation=T,
                    filter="none",
+                   caption=htmltools::tags$caption(
+                     # style = 'caption-side: top; text-align: center;',
+                     htmltools::em(cap)
+                   ),
                    options=list(pageLength=5,dom = 'tipr',
-                                columnDefs = list(list(visible=FALSE, targets=c(0,1)),
-                                                  list(width = '200px', targets = c(1)),
-                                                  list(width = '50px', targets = c(2,3))
+                                columnDefs = list(list(visible=FALSE, targets=0),
+                                                  list(width = '10px', targets=1),
+                                                  list(width = '200px', targets=2),
+                                                  list(width = '25px', targets=c(3,4)),
+                                                  list(
+                                                    targets=2,
+                                                    render = JS(
+                                                      "function(data, type, row, meta) {",
+                                                      "return type === 'display' && data.length > 30 ?",
+                                                      "'<span title=\"' + data + '\">' + data.substr(0, 30) + '...</span>' : data;",
+                                                      "}")),
+                                                  list(className = 'dt-center', targets=c(3,4))
                                 )
                    )) %>%
     formatStyle(
-      "node","group",
-      # target = "row",
-      backgroundColor = styleEqual(groups$label,groups$color)
+      # "node","group",
+      "group",
+      backgroundColor=styleEqual(groups$label,groups$color),
+      color=styleEqual(groups$label,groups$color)
     )
   
   return(res)
@@ -387,7 +403,8 @@ displayNetwork <- function(n,t) {
   browsable(
     tagList(list(
       tags$head(
-        tags$style("span.bold {font-weight:bold;}")
+        tags$style('span.bold {font-weight:bold;}
+                   * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;}')
       ),
       tags$body(
         tags$table(
