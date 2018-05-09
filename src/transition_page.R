@@ -258,9 +258,6 @@ genNetwork <- function(m) {
   lnodes <- data.frame(label=groups$label,color=groups$color,shape="square",
                        title=groups$desc)
   
-  func <- "function(properties) {
-              alert('selected nodes ' + this.body.data.nodes.get(properties.nodes[0]).id);}"
-  
   network <- visNetwork(nodes,edges,
                         main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
     visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
@@ -268,7 +265,12 @@ genNetwork <- function(m) {
                selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
     visInteraction(navigationButtons=T,hover=T) %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
-    visEvents(hoverNode="function(e) {alert(e.node);}")
+    # visEvents(hoverNode="function(e) {
+    #             alert(this.body.data.nodes.get(e.node).id);
+    #           }")
+    visEvents(hoverNode="function(e) {
+                alert(e.node);
+              }")
   
   invisible(apply(groups,1,function(x){
     assign("network",
@@ -305,7 +307,6 @@ genSrcDatatables <- function(m,nodes.ref) {
     
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
-      # incoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
       incoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
@@ -322,7 +323,6 @@ genSrcDatatables <- function(m,nodes.ref) {
     
     #outcoming:
     if (node.index==dim(m)[2]) { #virtual node END
-      # outcoming <- data.frame(matrix(c("-","",""))[,c(1,1,1)],stringsAsFactors=F)
       outcoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
     } else {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
@@ -406,7 +406,7 @@ displayNetwork <- function(n,t) {
     tagList(list(
       tags$head(
         tags$style('span.bold {font-weight:bold;}
-                   * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif;}'
+                   * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
                    )
       ),
       tags$body(
