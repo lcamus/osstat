@@ -270,6 +270,8 @@ genNetwork <- function(m) {
     #           }")
     visEvents(hoverNode="function(e) {
                 alert(e.node);
+                var table = $('#DataTables_Table_0').DataTable();
+                table.search(e.node).draw();
               }")
   
   invisible(apply(groups,1,function(x){
@@ -304,15 +306,19 @@ genSrcDatatables <- function(m,nodes.ref) {
   getNode <- function(node.index) {
     
     depth <- ncol(m)
+    node.id <- nodes.ref[node.index,]$id
+    
     
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
-      incoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
+      # incoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
+      incoming <- data.frame(matrix(c(node.id,"event",rep("-",4)),nrow=1),stringsAsFactors=F)
     } else {
       incoming.node <- names(head(sort(m[,node.index],decreasing=T),depth))
       incoming.traffic <- m[incoming.node,node.index]
       incoming.bouncing <- sapply(incoming.node,function(x) getBouncing(x,c(colnames(m),"BEGIN")[node.index]))
-      incoming <- data.frame(rep(as.character(node.index),depth),
+      # incoming <- data.frame(rep(as.character(node.index),depth),
+      incoming <- data.frame(rep(node.id,depth),
                              left_join(setNames(data.frame(matrix(incoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
                              paste0("#",1:depth),
                              sub("^[a-z]+/(.+)$","\\1",sub("^/(.+)","\\1",incoming.node)),
@@ -323,13 +329,15 @@ genSrcDatatables <- function(m,nodes.ref) {
     
     #outcoming:
     if (node.index==dim(m)[2]) { #virtual node END
-      outcoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
+      # outcoming <- data.frame(matrix(c(as.character(node.index),"event",rep("-",4)),nrow=1),stringsAsFactors=F)
+      outcoming <- data.frame(matrix(c(node.id,"event",rep("-",4)),nrow=1),stringsAsFactors=F)
     } else {
       if (node.index==dim(m)[2]+1) node.index <- dim(m)[1] #virtual node BEGIN 
       outcoming.node <- names(head(sort(m[node.index,],decreasing=T),depth))
       outcoming.traffic <- m[node.index,outcoming.node]
       outcoming.bouncing <- sapply(outcoming.node,function(x) getBouncing(c(colnames(m),"BEGIN")[node.index],x))
-      outcoming <- data.frame(rep(as.character(node.index),depth),
+      # outcoming <- data.frame(rep(as.character(node.index),depth),
+      outcoming <- data.frame(rep(node.id,depth),
                               left_join(setNames(data.frame(matrix(outcoming.node,ncol=1),stringsAsFactors=F),"id"),nodes.ref,by="id")$group,
                               paste0("#",1:depth),
                               sub("^[a-z]+/(.+)$","\\1",sub("^/(.+)","\\1",outcoming.node)),
@@ -368,11 +376,10 @@ genDatatables <- function(t,cap) {
   res <- datatable(t,rownames=F,height=250,width=600,fillContainer=F,autoHideNavigation=T,
                    filter="none",class="compact",
                    caption=htmltools::tags$caption(
-                     # style = 'caption-side: top; text-align: center;',
                      htmltools::em(cap)
                    ),
                    options=list(pageLength=5,dom = 'tpr',autoWidth=T,
-                                columnDefs = list(list(visible=FALSE, targets=0),
+                                columnDefs = list(list(visible=F, searchable=T, targets=0),
                                                   list(width = '10px', targets=c(1,2)),
                                                   list(width = '200px', targets=3),
                                                   list(width = '25px', targets=c(4,5)),
