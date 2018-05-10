@@ -8,6 +8,8 @@ groups <- data.frame(label=c("indicators","insights","bankscorner","shared","out
                             "events related to visit (begin, end, error and save to local)"
                      ),stringsAsFactors=F)
 
+# desc <- data.frame(id.page)
+
 extendRepositoryPage <- function() {
   
   suppressPackageStartupMessages(require(dplyr))
@@ -197,22 +199,7 @@ genNetwork <- function(m) {
       return(res)
     })
     
-    # io <- c("incoming","outcoming")
-    # ntb <- c("node","freq","bouncing")
-    
     sketch <- lapply(1:(ncol(m)+1),function(x){
-      # htmltools::withTags(table(
-      #   thead(
-      #     tr(
-      #       th(colspan=3,io[1]),
-      #       th(colspan=3,io[2])
-      #     ),
-      #     tr(lapply(rep(ntb,2),th))
-      #   ),
-      #   tbody(
-      #     getNode(x)
-      #   )
-      # ))
       getNode(x)
     })
     
@@ -220,14 +207,12 @@ genNetwork <- function(m) {
       lib <- paste0(gsub("/"," > ",sub("/$","",sub("^/","",c(colnames(m),"BEGIN")[x]))))
       return(htmltools::withTags(div(
         h3(lib),
-        table(tr(
-          td("incoming traffic",span(incoming[x],class="bold")),
-          td("outcoming traffic",span(outcoming[x],class="bold")),
-          td("bouncing rate",span(bouncing[x],class="bold"))
+        table(
+          tr(td("incoming traffic"),td(incoming[x],class="bold")),
+          tr(td("outcoming traffic"),td(outcoming[x],class="bold")),
+          tr(td("bouncing rate"),td(bouncing[x],class="bold"))
         ))
-        # ,
-        # sketch[[x]]
-      )))
+      ))
     })
     
     res <- sapply(res,as.character)
@@ -242,7 +227,7 @@ genNetwork <- function(m) {
                       stringsAsFactors=F)
   nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
   nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
-  nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
+  # nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
   nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
   nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
   nodes <- nodes[unlist(lapply(groups$label,function(x) which(nodes$group %in% x))),]
@@ -269,7 +254,9 @@ genNetwork <- function(m) {
                 var table0 = $('#DataTables_Table_0').DataTable();
                 var table1 = $('#DataTables_Table_1').DataTable();
                 table0.search(e.node,false,false,false).draw();
+                $('#DataTables_Table_0 caption').text('Incoming '+e.node);
                 table1.search(e.node,false,false,false).draw();
+                $('#DataTables_Table_1 caption').text('Outcoming '+e.node);
               }")
   
   invisible(apply(groups,1,function(x){
