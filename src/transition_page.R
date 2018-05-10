@@ -307,7 +307,8 @@ genSrcDatatables <- function(m,nodes.ref) {
   getNode <- function(node.index) {
     
     depth <- ncol(m)
-    node.id <- nodes.ref[node.index,]$id
+    # node.id <- nodes.ref[node.index,]$id
+    node.id <- colnames(m)[node.index]
     
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
@@ -344,7 +345,7 @@ genSrcDatatables <- function(m,nodes.ref) {
     
     rnfb <- c("ref","group","rank","node","freq","bouncing")
     
-    incoming[,3] <- as.numeric(incoming[,3])
+    incoming[,3] <- as.numeric(incoming[,3]) #rank
     outcoming[,3] <- as.numeric(outcoming[,3])
     
     res <- list(
@@ -387,14 +388,13 @@ genDatatables <- function(t,cap) {
                                                     targets=3,
                                                     render = JS(
                                                       "function(data, type, row, meta) {",
-                                                      "return type === 'display' && data.length > 30 ?",
-                                                      "'<span title=\"' + data + '\">' + data.substr(0, 30) + '...</span>' : data;",
+                                                      "return type === 'display' && data.length > 25 ?",
+                                                      "'<span title=\"' + data + '\">' + data.substr(0,25) + '...</span>' : data;",
                                                       "}")),
-                                                  list(className = 'dt-center', targets=c(4,5))
+                                                  list(className = 'dt-center', targets=c(2,4,5))
                                 )
                    )) %>%
     formatStyle(
-      # "node","group",
       "group",
       backgroundColor=styleEqual(groups$label,groups$color),
       color=styleEqual(groups$label,groups$color)
