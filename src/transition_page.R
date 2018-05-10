@@ -265,14 +265,11 @@ genNetwork <- function(m) {
                selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
     visInteraction(navigationButtons=T,hover=T) %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
-    # visEvents(hoverNode="function(e) {
-    #             alert(this.body.data.nodes.get(e.node).id);
-    #           }")
     visEvents(hoverNode="function(e) {
                 var table0 = $('#DataTables_Table_0').DataTable();
                 var table1 = $('#DataTables_Table_1').DataTable();
-                table0.search(e.node).draw();
-                table1.search(e.node).draw();
+                table0.search(e.node,false,false,false).draw();
+                table1.search(e.node,false,false,false).draw();
               }")
   
   invisible(apply(groups,1,function(x){
@@ -307,8 +304,7 @@ genSrcDatatables <- function(m,nodes.ref) {
   getNode <- function(node.index) {
     
     depth <- ncol(m)
-    # node.id <- nodes.ref[node.index,]$id
-    node.id <- colnames(m)[node.index]
+    node.id <- ifelse(node.index==dim(m)[2]+1,"BEGIN",colnames(m)[node.index])
     
     #incoming:
     if (node.index==dim(m)[2]+1) { #virtual node BEGIN
