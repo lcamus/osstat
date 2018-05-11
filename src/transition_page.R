@@ -274,7 +274,9 @@ genNetwork <- function(m) {
                 var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
                 networkCanvas.style.cursor = 'default';
               }"              
-    )
+    ) %>%
+    visNodes(font=list(strokeWidth=1))
+  
   invisible(apply(groups,1,function(x){
     assign("network",
            network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2])),
