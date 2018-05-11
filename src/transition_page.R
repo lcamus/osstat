@@ -8,8 +8,6 @@ groups <- data.frame(label=c("indicators","insights","bankscorner","shared","out
                             "events related to visit (begin, end, error and save to local)"
                      ),stringsAsFactors=F)
 
-# desc <- data.frame(id.page)
-
 extendRepositoryPage <- function() {
   
   suppressPackageStartupMessages(require(dplyr))
@@ -208,9 +206,9 @@ genNetwork <- function(m) {
       return(htmltools::withTags(div(
         h3(lib),
         table(
-          tr(td("incoming traffic"),td(incoming[x],class="bold")),
-          tr(td("outcoming traffic"),td(outcoming[x],class="bold")),
-          tr(td("bouncing rate"),td(bouncing[x],class="bold"))
+          tr(td("incoming traffic"),td(incoming[x],class="figure")),
+          tr(td("outcoming traffic"),td(outcoming[x],class="figure")),
+          tr(td("bouncing rate"),td(bouncing[x],class="figure"))
         ))
       ))
     })
@@ -248,7 +246,15 @@ genNetwork <- function(m) {
     visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
     visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
                selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
-    visInteraction(navigationButtons=T,hover=T) %>%
+    visInteraction(navigationButtons=T,hover=T,
+                   tooltipStyle = '
+                     position: fixed;
+                     visibility: hidden;
+                     white-space: pre-wrap;
+                     background-color: #ffffca;
+                     padding: 15px;
+                     z-index: 1;
+                     border-radius: 30px;') %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
     visEvents(hoverNode="function(e) {
                 var table0 = $('#DataTables_Table_0').DataTable();
@@ -395,7 +401,7 @@ displayNetwork <- function(n,t) {
   browsable(
     tagList(list(
       tags$head(
-        tags$style('span.bold {font-weight:bold;}
+        tags$style('td.figure {font-weight:bold; text-align: center;}
                    * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
                    )
       ),
