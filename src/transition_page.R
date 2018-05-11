@@ -134,6 +134,10 @@ genNetwork <- function(m) {
     
     require(htmltools)
     
+    getPageDesc <- function() {
+      
+    }
+    
     getBouncing <- function(node.incoming,node.outcoming) {
       
       if (node.outcoming %in% c("BEGIN","END") | node.incoming=="END")
@@ -151,7 +155,7 @@ genNetwork <- function(m) {
     
     getNode <- function(node.index) {
       
-      # depth <- ncol(m)+1
+      # depth <- ncol(m)
       depth <- 3
       
       #incoming:
@@ -257,13 +261,22 @@ genNetwork <- function(m) {
                      border-radius: 30px;') %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
     visEvents(hoverNode="function(e) {
+//alert(document.querySelector('[id^=\"graphhtmlwidget-\"]').id);
+                var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
                 var table0 = $('#DataTables_Table_0').DataTable();
                 var table1 = $('#DataTables_Table_1').DataTable();
+                networkCanvas.style.cursor = 'pointer';
                 table0.search(e.node,false,false,false).draw();
                 $('#DataTables_Table_0 caption').text('Incoming '+e.node);
                 table1.search(e.node,false,false,false).draw();
                 $('#DataTables_Table_1 caption').text('Outcoming '+e.node);
-              }")
+              }"
+#               ,
+#               afterDrawing="function() {
+#                 // changeEventCursor('hoverNode','pointer');
+# alert('hello');
+#               }"
+              )
   
   invisible(apply(groups,1,function(x){
     assign("network",
