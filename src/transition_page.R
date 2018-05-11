@@ -261,23 +261,20 @@ genNetwork <- function(m) {
                      border-radius: 30px;') %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
     visEvents(hoverNode="function(e) {
-//alert(document.querySelector('[id^=\"graphhtmlwidget-\"]').id);
                 var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
+                networkCanvas.style.cursor = 'pointer';
                 var table0 = $('#DataTables_Table_0').DataTable();
                 var table1 = $('#DataTables_Table_1').DataTable();
-                networkCanvas.style.cursor = 'pointer';
                 table0.search(e.node,false,false,false).draw();
                 $('#DataTables_Table_0 caption').text('Incoming '+e.node);
                 table1.search(e.node,false,false,false).draw();
                 $('#DataTables_Table_1 caption').text('Outcoming '+e.node);
-              }"
-#               ,
-#               afterDrawing="function() {
-#                 // changeEventCursor('hoverNode','pointer');
-# alert('hello');
-#               }"
-              )
-  
+              }",
+              blurNode="function(e) {              
+                var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
+                networkCanvas.style.cursor = 'default';
+              }"              
+    )
   invisible(apply(groups,1,function(x){
     assign("network",
            network %>% visGroups(groupname=as.character(x[1]),color=as.character(x[2])),
