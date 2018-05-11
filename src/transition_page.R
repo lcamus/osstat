@@ -248,7 +248,8 @@ genNetwork <- function(m) {
   network <- visNetwork(nodes,edges,
                         main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
     visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
-    visOptions(highlightNearest=list(enabled=T, degree=0),nodesIdSelection=T,
+    visOptions(highlightNearest=list(enabled=T, degree=0),
+               nodesIdSelection=list(enabled=T,useLabels=F),
                selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
     visInteraction(navigationButtons=T,hover=T,
                    tooltipStyle = '
@@ -276,6 +277,13 @@ genNetwork <- function(m) {
               }",
               selectNode="function(e) {
                 var nodeId = e.nodes[0];
+                var pos = this.getPositions([nodeId]);
+                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
+              }",
+              click="function(e) {
+alert('cc');
+                var nodeId = e.nodes[0];
+alert(nodeId);
                 var pos = this.getPositions([nodeId]);
                 this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
               }"
@@ -420,7 +428,13 @@ displayNetwork <- function(n,t) {
       tags$head(
         tags$style('td.figure {font-weight:bold; text-align: center;}
                    * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
-                   )
+                   ),
+        tags$script("$( document ).ready(function() {
+                        //console.log( 'document loaded' );
+                        var selectById = document.querySelector('[id^=\"nodeSelecthtmlwidget-\"]');
+                        //selectById.style = 'color: red;'
+                        selectById.onchange = function(){alert('cc');};
+                     });")
       ),
       tags$body(
         tags$table(
