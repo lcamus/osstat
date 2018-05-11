@@ -273,7 +273,12 @@ genNetwork <- function(m) {
               blurNode="function(e) {              
                 var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
                 networkCanvas.style.cursor = 'default';
-              }"              
+              }",
+              selectNode="function(e) {
+                var nodeId = e.nodes[0];
+                var pos = this.getPositions([nodeId]);
+                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
+              }"
     ) %>%
     visNodes(font=list(strokeWidth=1))
   
