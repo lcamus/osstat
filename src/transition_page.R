@@ -276,21 +276,26 @@ genNetwork <- function(m) {
                 networkCanvas.style.cursor = 'default';
               }",
               selectNode="function(e) {
-console.log('selectNode');
                 var nodeId = e.nodes[0];
                 var pos = this.getPositions([nodeId]);
                 this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
               }",
-              stabilized="function(e) {alert('stabilized');}",
-              beforeDrawing="function(e) {console.log('beforedrawing');}",
+              # click="function(e) {console.log('click original');}",
+              # startStabilizing="function(e) {
+              #   this.on('click',function(){alert('click redefined!');});
+              # }",
+              stabilized="function(e){
+                console.log('stabilized in '+e+' iterations');}",
+              # afterDrawing="function(e) {console.log('afterdrawing');}",
               initRedraw="function(e) {
+//console.log('initredraw');                
                 nodeId = window.nodeSelecthtmlwidgetSelected;
                 if (typeof nodeId !== 'undefined' && nodeId !== null) {
-console.log(nodeId);
                 window.nodeSelecthtmlwidgetSelected=null;
                 var pos = this.getPositions([nodeId]);
                 this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
                 this.selectNodes([nodeId]);
+console.log('catch' + this.getSelectedNodes());
                 }
               }"
     ) %>%
@@ -441,7 +446,16 @@ displayNetwork <- function(n,t) {
                           window.nodeSelecthtmlwidgetSelected=selectById.value;
                           console.log('nodeSelecthtmlwidget: selected ' + window.nodeSelecthtmlwidgetSelected);
                         };
-                     });")
+                     });"),
+        tags$script("
+            function sleep(ms) {
+              return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            async function checkSelectById() {
+              console.log('Taking a break...');
+              await sleep(2000);
+              console.log('Two second later');
+            }")
       ),
       tags$body(
         tags$table(
