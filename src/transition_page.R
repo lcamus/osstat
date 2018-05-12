@@ -296,9 +296,23 @@ genNetwork <- function(m) {
                     if (typeof nodeId !== 'undefined' && nodeId !== null) {
                       window.nodeSelecthtmlwidgetSelected=null;
                       var pos = network.getPositions([nodeId]);
-                      network.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
-                      network.selectNodes([nodeId]);
-                      console.log('catch' + network.getSelectedNodes());
+                      var currentScale = network.getScale();
+                      var targetScale = (currentScale>1.3?currentScale:1.3);
+console.log('target scale: '+targetScale);
+                      network.moveTo({
+                        position: {x:pos[nodeId].x, y:pos[nodeId].y},
+                        scale: targetScale,
+                        animation: {
+                          duration:3000,
+                          easingFunction:'easeInOutCubic'
+                        }
+                      });
+                      network.selectNodes([nodeId],true);
+                      console.log('catch ' + network.getSelectedNodes());
+                      nodeGroup=network.body.data.nodes.get([nodeId],{fields: ['group']})[0].group;
+                      console.log('group ' + nodeGroup);
+                      nodeGroupOptions=network.options.autoResize;
+                      console.log('options '+nodeGroupOptions);
                     }
                   }
                 }
