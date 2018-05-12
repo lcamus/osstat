@@ -280,24 +280,44 @@ genNetwork <- function(m) {
                 var pos = this.getPositions([nodeId]);
                 this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
               }",
-              # click="function(e) {console.log('click original');}",
-              # startStabilizing="function(e) {
-              #   this.on('click',function(){alert('click redefined!');});
-              # }",
-              stabilized="function(e){
-                console.log('stabilized in '+e+' iterations');}",
-              # afterDrawing="function(e) {console.log('afterdrawing');}",
-              initRedraw="function(e) {
-//console.log('initredraw');                
-                nodeId = window.nodeSelecthtmlwidgetSelected;
-                if (typeof nodeId !== 'undefined' && nodeId !== null) {
-                window.nodeSelecthtmlwidgetSelected=null;
-                var pos = this.getPositions([nodeId]);
-                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
-                this.selectNodes([nodeId]);
-console.log('catch' + this.getSelectedNodes());
+              startStabilizing="function(e) {
+                function sleep(x) {
+                  return new Promise(resolve => {
+                    setTimeout(() => {
+                      resolve(x);
+                    }, 2000);
+                  });
                 }
+                async function checkSelectById(network) {
+                  while(true) {
+                    console.log('calling');
+                    var result = await sleep('cc');
+                    nodeId = window.nodeSelecthtmlwidgetSelected;
+                    if (typeof nodeId !== 'undefined' && nodeId !== null) {
+                      window.nodeSelecthtmlwidgetSelected=null;
+                      var pos = network.getPositions([nodeId]);
+                      network.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
+                      network.selectNodes([nodeId]);
+                      console.log('catch' + network.getSelectedNodes());
+                    }
+                  }
+                }
+                checkSelectById(this);
+              }",
+              stabilized="function(e){
+                console.log('stabilized in '+e.iterations+' iterations');
               }"
+              # ,
+              # initRedraw="function(e) {
+              #   nodeId = window.nodeSelecthtmlwidgetSelected;
+              #   if (typeof nodeId !== 'undefined' && nodeId !== null) {
+              #     window.nodeSelecthtmlwidgetSelected=null;
+              #     var pos = this.getPositions([nodeId]);
+              #     this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
+              #     this.selectNodes([nodeId]);
+              #     console.log('catch' + this.getSelectedNodes());
+              #   }
+              # }"
     ) %>%
     visNodes(font=list(strokeWidth=1))
   
@@ -446,16 +466,24 @@ displayNetwork <- function(n,t) {
                           window.nodeSelecthtmlwidgetSelected=selectById.value;
                           console.log('nodeSelecthtmlwidget: selected ' + window.nodeSelecthtmlwidgetSelected);
                         };
-                     });"),
-        tags$script("
-            function sleep(ms) {
-              return new Promise(resolve => setTimeout(resolve, ms));
-            }
-            async function checkSelectById() {
-              console.log('Taking a break...');
-              await sleep(2000);
-              console.log('Two second later');
-            }")
+                     });")
+        # ,
+        # tags$script(JS("
+        #   function sleep(x) {
+        #     return new Promise(resolve => {
+        #       setTimeout(() => {
+        #         resolve(x);
+        #       }, 2000);
+        #     });
+        #   }
+        #   async function checkSelectById() {
+        #     while(true) {
+        #       console.log('calling');
+        #       var result = await sleep('cc');
+        #       console.log(result);
+        #     }
+        #   }
+        #             "))
       ),
       tags$body(
         tags$table(
