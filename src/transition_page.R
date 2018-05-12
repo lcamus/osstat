@@ -276,16 +276,22 @@ genNetwork <- function(m) {
                 networkCanvas.style.cursor = 'default';
               }",
               selectNode="function(e) {
+console.log('selectNode');
                 var nodeId = e.nodes[0];
                 var pos = this.getPositions([nodeId]);
                 this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
               }",
-              click="function(e) {
-alert('cc');
-                var nodeId = e.nodes[0];
-alert(nodeId);
+              stabilized="function(e) {alert('stabilized');}",
+              beforeDrawing="function(e) {console.log('beforedrawing');}",
+              initRedraw="function(e) {
+                nodeId = window.nodeSelecthtmlwidgetSelected;
+                if (typeof nodeId !== 'undefined' && nodeId !== null) {
+console.log(nodeId);
+                window.nodeSelecthtmlwidgetSelected=null;
                 var pos = this.getPositions([nodeId]);
-                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
+                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
+                this.selectNodes([nodeId]);
+                }
               }"
     ) %>%
     visNodes(font=list(strokeWidth=1))
@@ -430,10 +436,11 @@ displayNetwork <- function(n,t) {
                    * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
                    ),
         tags$script("$( document ).ready(function() {
-                        //console.log( 'document loaded' );
                         var selectById = document.querySelector('[id^=\"nodeSelecthtmlwidget-\"]');
-                        //selectById.style = 'color: red;'
-                        selectById.onchange = function(){alert('cc');};
+                        selectById.onchange = function() {
+                          window.nodeSelecthtmlwidgetSelected=selectById.value;
+                          console.log('nodeSelecthtmlwidget: selected ' + window.nodeSelecthtmlwidgetSelected);
+                        };
                      });")
       ),
       tags$body(
@@ -465,4 +472,4 @@ t <- lapply(seq_along(sd),function(x)genDatatables(sd[[x]],c("Incoming","Outcomi
 
 displayNetwork(n,t)
 
-# visSave(n, file = "network.html")
+visSave(n, file = "network.html")
