@@ -14,8 +14,8 @@ function (e) {
 
       nodeId = window.nodeSelecthtmlwidgetSelected;
       if (typeof nodeId !== 'undefined' && nodeId !== null) {
-
         window.nodeSelecthtmlwidgetSelected=null;
+
         var pos = network.getPositions([nodeId]);
         var currentScale = network.getScale();
         var targetScale = (currentScale>1.2?currentScale:1.2);
@@ -28,25 +28,28 @@ function (e) {
           }
         });//moveTo
 
+        nodes=network.body.data.nodes;
+        edges=network.body.data.edges;
         network.selectNodes([nodeId],true);
 
+        nodes.forEach(function(node) {
+          nodes.update({ id: node.id, color: 'rgba(200,200,200,0.5)' })
+        })
+
         //update selected node:
-        nodes=network.body.data.nodes;
-        //nodeGroup=nodes._data[nodeId].group;
-        nodeBodyHiddenColor=nodes._data[nodeId].bodyHiddenColor;
-        nodes._data[nodeId].color=nodeBodyHiddenColor;
+        nodes._data[nodeId].color=nodes._data[nodeId].bodyHiddenColor;
         nodes._data[nodeId].label=nodes._data[nodeId].hiddenLabel;
         nodes.update(nodes.get(nodeId));
 
         //update direct edges:
-        selectedEdges=network.getSelectedEdges();
-        edges=network.body.data.edges;
+        var selectedEdges=network.getSelectedEdges();
         selectedEdges.forEach(function(edgeId){
           edges._data[edgeId].color={inherit: true};
           edges.update(edges.get(edgeId));
         })
 
-        network.unselectAll();
+        //network.unselectAll();
+        //network.redraw();
 
       }//if node selected
 

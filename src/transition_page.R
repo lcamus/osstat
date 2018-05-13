@@ -134,15 +134,15 @@ setGroup <- function() {
 } #setGroup
 groups <- setGroup()
 
+getJSEventHandler <- function(e) {
+  f <- paste0("./src/js/",e,".js")
+  func <- JS(readChar(f, file.info(f)$size))
+  return(func)
+} #getJSEventHandler
+
 genNetwork <- function(m) {
   
   require(visNetwork)
-  
-  getJSEventHandler <- function(e) {
-    f <- paste0("./src/js/",e,".js")
-    func <- JS(readChar(f, file.info(f)$size))
-    return(func)
-  }
   
   getTitle <- function() {
     
@@ -284,7 +284,8 @@ genNetwork <- function(m) {
               blurNode=getJSEventHandler("blurNode"),
               selectNode=getJSEventHandler("selectNode"),
               stabilized=getJSEventHandler("stabilized"),
-              startStabilizing=getJSEventHandler("startStabilizing")
+              startStabilizing="function(e){window.network=this;}"
+              # startStabilizing=getJSEventHandler("startStabilizing")
     )
   
   invisible(apply(groups,1,function(x){
@@ -425,15 +426,15 @@ displayNetwork <- function(n,t) {
       tags$head(
         tags$style('td.figure {font-weight:bold; text-align: center;}
                    * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
-                   )
-        ,
-        tags$script(JS("$( document ).ready(function() {
-                        var selectById = document.querySelector('[id^=\"nodeSelecthtmlwidget-\"]');
-                        selectById.onchange = function() {
-                          window.nodeSelecthtmlwidgetSelected=selectById.value;
-                          console.log('nodeSelecthtmlwidget: selected ' + window.nodeSelecthtmlwidgetSelected);
-                        };
-                     });"))
+                   ),
+        tags$script(HTML(getJSEventHandler("selectNodeById")))
+        # tags$script(JS("$( document ).ready(function() {
+        #                 var selectById = document.querySelector('[id^=\"nodeSelecthtmlwidget-\"]');
+        #                 selectById.onchange = function() {
+        #                   window.nodeSelecthtmlwidgetSelected=selectById.value;
+        #                   console.log('nodeSelecthtmlwidget: selected ' + window.nodeSelecthtmlwidgetSelected);
+        #                 };
+        #              });"))
       ),
       tags$body(
         tags$table(
