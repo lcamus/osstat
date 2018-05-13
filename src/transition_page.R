@@ -156,7 +156,7 @@ genNetwork <- function(m) {
     getNode <- function(node.index) {
       
       # depth <- ncol(m)
-      depth <- 3
+      depth <- 1
       
       #incoming:
       if (node.index==dim(m)[2]+1) { #virtual node BEGIN
@@ -222,17 +222,22 @@ genNetwork <- function(m) {
     
   } #getTitle
   
-  nodes <- data.frame(id=c(colnames(m),"BEGIN"),
-                      label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
-                      value=c(colSums(m),rowSums(m)[dim(m)[1]]),
-                      title=getTitle(),
-                      stringsAsFactors=F)
-  nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
-  nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
-  # nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
-  nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
-  nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
-  nodes <- nodes[unlist(lapply(groups$label,function(x) which(nodes$group %in% x))),]
+  setNodes <- function() {
+    nodes <- data.frame(id=c(colnames(m),"BEGIN"),
+                        label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
+                        value=c(colSums(m),rowSums(m)[dim(m)[1]]),
+                        title=getTitle(),
+                        stringsAsFactors=F)
+    nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
+    nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
+    # nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
+    nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
+    nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
+    nodes <- nodes[unlist(lapply(groups$label,function(x) which(nodes$group %in% x))),]
+    return(nodes)
+  } #setNodes
+  
+  nodes <- setNodes()
   
   edges <- setNames(data.frame(matrix(ncol=3, nrow=0),stringsAsFactors=F),c("from","to","value"))
   
@@ -307,19 +312,20 @@ console.log('target scale: '+targetScale);
                         position: {x:pos[nodeId].x, y:pos[nodeId].y},
                         scale: targetScale,
                         animation: {
-                          duration:3000,
+                          duration:2000,
                           easingFunction:'easeInOutCubic'
                         }
                       });
                       network.selectNodes([nodeId],true);
-                      console.log('catch ' + network.getSelectedNodes());
-                      nodeGroup=network.body.data.nodes.get([nodeId],{fields: ['group']})[0].group;
-                      console.log('group ' + nodeGroup);
-                      nodeGroupOptions=network;
-                      console.log('options '+nodeGroupOptions);
+                      nodes=network.body.data.nodes;
+                      //nodeGroup=nodes.get([nodeId],{fields: ['group']})[0].group;
+                      nodeGroup=nodes._data[nodeId].group;
+                      nodeBodyHiddenColor=nodes._data[nodeId].bodyHiddenColor;
+nodes._data[nodeId].color=nodeBodyHiddenColor;
+nodes.update(nodes.get(nodeId));
 
-for(var member in nodeGroupOptions){console.log('Name: ' + member);console.log('Value: ' + nodeGroupOptions[member]);}
-
+                      //objectInspection=network;
+                      //console.dir('object inspect '+objectInspection);
                     }
                   }
                 }
