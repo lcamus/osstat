@@ -1,13 +1,5 @@
 #matrix transition pageIdAction
 
-groups <- data.frame(label=c("indicators","insights","bankscorner","shared","outlink","event"),
-                     color=c("#6fb871","#5cbde3","#D9685E","#004996","darkorange","darkmagenta"),
-                     desc=c("indicators","Insights into euro area statistics","Banks' Corner",
-                            "shared pages and features (incl. homepage)",
-                            "outlinks to external pages (institutional websites and web ressources)",
-                            "events related to visit (begin, end, error and save to local)"
-                     ),stringsAsFactors=F)
-
 extendRepositoryPage <- function() {
   
   suppressPackageStartupMessages(require(dplyr))
@@ -125,6 +117,22 @@ genTransitionMatrix <- function(pr2,aa) {
   return(m)
   
 } #genTransitionMatrix
+
+setGroup <- function() {
+  
+  groups <- data.frame(label=c("indicators","insights","bankscorner","shared","outlink","event"),
+                       color=c("#6fb871","#5cbde3","#D9685E","#004996","darkorange","darkmagenta"),
+                       desc=c("indicators","Insights into euro area statistics","Banks' Corner",
+                              "shared pages and features (incl. homepage)",
+                              "outlinks to external pages (institutional websites and web ressources)",
+                              "events related to visit (begin, end, error and save to local)"
+                       ),stringsAsFactors=F)
+  groups$color <- sapply(groups$color,function(x)paste0("#",paste(as.hexmode(col2rgb(x)),collapse="")))
+  
+  return(groups)
+  
+} #setGroup
+groups <- setGroup()
 
 genNetwork <- function(m) {
   
@@ -250,6 +258,9 @@ genNetwork <- function(m) {
   lnodes <- data.frame(label=groups$label,color=groups$color,shape="square",
                        title=groups$desc)
   
+  f <- "./src/js/startStabilizing.js"
+  eventHandlersJS <- JS(readChar(f, file.info(f)$size))
+  
   network <- visNetwork(nodes,edges,
                         main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
     visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
@@ -289,48 +300,46 @@ genNetwork <- function(m) {
               stabilized="function(e){
                 console.log('stabilized in '+e.iterations+' iterations');
               }",
-              startStabilizing=JS("function(e) {
-                function sleep(x) {
-                  return new Promise(resolve => {
-                    setTimeout(() => {
-                      resolve(x);
-                    }, 2000);
-                  });
-                }
-                async function checkSelectById(network) {
-                  while(true) {
-                    console.log('calling');
-                    var result = await sleep('cc');
-                    nodeId = window.nodeSelecthtmlwidgetSelected;
-                    if (typeof nodeId !== 'undefined' && nodeId !== null) {
-                      window.nodeSelecthtmlwidgetSelected=null;
-                      var pos = network.getPositions([nodeId]);
-                      var currentScale = network.getScale();
-                      var targetScale = (currentScale>1.3?currentScale:1.3);
-console.log('target scale: '+targetScale);
-                      network.moveTo({
-                        position: {x:pos[nodeId].x, y:pos[nodeId].y},
-                        scale: targetScale,
-                        animation: {
-                          duration:2000,
-                          easingFunction:'easeInOutCubic'
-                        }
-                      });
-                      network.selectNodes([nodeId],true);
-                      nodes=network.body.data.nodes;
-                      //nodeGroup=nodes.get([nodeId],{fields: ['group']})[0].group;
-                      nodeGroup=nodes._data[nodeId].group;
-                      nodeBodyHiddenColor=nodes._data[nodeId].bodyHiddenColor;
-nodes._data[nodeId].color=nodeBodyHiddenColor;
-nodes.update(nodes.get(nodeId));
-
-                      //objectInspection=network;
-                      //console.dir('object inspect '+objectInspection);
-                    }
-                  }
-                }
-                checkSelectById(this);
-              }")
+              startStabilizing=eventHandlersJS
+#               startStabilizing=JS("function startStabilizingEvent(e) {
+#                 function sleep(x) {
+#                   return new Promise(resolve => {
+#                     setTimeout(() => {
+#                       resolve(x);
+#                     }, 2000);
+#                   });
+#                 }
+#                 async function checkSelectById(network) {
+#                   while(true) {
+#                     console.log('calling');
+#                     var result = await sleep('cc');
+#                     nodeId = window.nodeSelecthtmlwidgetSelected;
+#                     if (typeof nodeId !== 'undefined' && nodeId !== null) {
+#                       window.nodeSelecthtmlwidgetSelected=null;
+#                       var pos = network.getPositions([nodeId]);
+#                       var currentScale = network.getScale();
+#                       var targetScale = (currentScale>1.2?currentScale:1.2);
+# console.log('target scale: '+targetScale);
+#                       network.moveTo({
+#                         position: {x:pos[nodeId].x, y:pos[nodeId].y},
+#                         scale: targetScale,
+#                         animation: {
+#                           duration:2000,
+#                           easingFunction:'easeInOutCubic'
+#                         }
+#                       });
+#                       network.selectNodes([nodeId],true);
+#                       nodes=network.body.data.nodes;
+#                       //nodeGroup=nodes.get([nodeId],{fields: ['group']})[0].group;
+#                       nodeGroup=nodes._data[nodeId].group;
+#                       nodeBodyHiddenColor=nodes._data[nodeId].bodyHiddenColor;
+# nodes._data[nodeId].color=nodeBodyHiddenColor;
+# nodes.update(nodes.get(nodeId));
+#                     }
+#                   }
+#                 }
+#                 checkSelectById(this);
+#               }")
     )
   
   invisible(apply(groups,1,function(x){
