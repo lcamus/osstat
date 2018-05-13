@@ -261,6 +261,7 @@ genNetwork <- function(m) {
                      z-index: 1;
                      border-radius: 30px;') %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
+    visNodes(font=list(strokeWidth=1)) %>%
     visEvents(hoverNode="function(e) {
                 var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
                 networkCanvas.style.cursor = 'pointer';
@@ -271,16 +272,19 @@ genNetwork <- function(m) {
                 table1.search(e.node,false,false,false).draw();
                 $('#DataTables_Table_1 caption').text('Outcoming '+e.node);
               }",
-              blurNode="function(e) {              
+              blurNode="function(e) {
                 var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
                 networkCanvas.style.cursor = 'default';
               }",
               selectNode="function(e) {
                 var nodeId = e.nodes[0];
                 var pos = this.getPositions([nodeId]);
-                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});  
+                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
               }",
-              startStabilizing="function(e) {
+              stabilized="function(e){
+                console.log('stabilized in '+e.iterations+' iterations');
+              }",
+              startStabilizing=JS("function(e) {
                 function sleep(x) {
                   return new Promise(resolve => {
                     setTimeout(() => {
@@ -311,29 +315,17 @@ console.log('target scale: '+targetScale);
                       console.log('catch ' + network.getSelectedNodes());
                       nodeGroup=network.body.data.nodes.get([nodeId],{fields: ['group']})[0].group;
                       console.log('group ' + nodeGroup);
-                      nodeGroupOptions=network.options.autoResize;
+                      nodeGroupOptions=network;
                       console.log('options '+nodeGroupOptions);
+
+for(var member in nodeGroupOptions){console.log('Name: ' + member);console.log('Value: ' + nodeGroupOptions[member]);}
+
                     }
                   }
                 }
                 checkSelectById(this);
-              }",
-              stabilized="function(e){
-                console.log('stabilized in '+e.iterations+' iterations');
-              }"
-              # ,
-              # initRedraw="function(e) {
-              #   nodeId = window.nodeSelecthtmlwidgetSelected;
-              #   if (typeof nodeId !== 'undefined' && nodeId !== null) {
-              #     window.nodeSelecthtmlwidgetSelected=null;
-              #     var pos = this.getPositions([nodeId]);
-              #     this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
-              #     this.selectNodes([nodeId]);
-              #     console.log('catch' + this.getSelectedNodes());
-              #   }
-              # }"
-    ) %>%
-    visNodes(font=list(strokeWidth=1))
+              }")
+    )
   
   invisible(apply(groups,1,function(x){
     assign("network",
@@ -473,45 +465,27 @@ displayNetwork <- function(n,t) {
       tags$head(
         tags$style('td.figure {font-weight:bold; text-align: center;}
                    * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
-                   ),
-        tags$script("$( document ).ready(function() {
+                   )
+        ,
+        tags$script(JS("$( document ).ready(function() {
                         var selectById = document.querySelector('[id^=\"nodeSelecthtmlwidget-\"]');
                         selectById.onchange = function() {
                           window.nodeSelecthtmlwidgetSelected=selectById.value;
                           console.log('nodeSelecthtmlwidget: selected ' + window.nodeSelecthtmlwidgetSelected);
                         };
-                     });")
-        # ,
-        # tags$script(JS("
-        #   function sleep(x) {
-        #     return new Promise(resolve => {
-        #       setTimeout(() => {
-        #         resolve(x);
-        #       }, 2000);
-        #     });
-        #   }
-        #   async function checkSelectById() {
-        #     while(true) {
-        #       console.log('calling');
-        #       var result = await sleep('cc');
-        #       console.log(result);
-        #     }
-        #   }
-        #             "))
+                     });"))
       ),
       tags$body(
         tags$table(
           tags$tr(
-            tags$td(n,rowspan=2,width="70%",valign="top"),
+            tags$td(n,rowspan=2,width="70%",valign="top")
+            ,
             tags$td(t[[1]],width="30%")
-          ),
+          )
+          ,
           tags$tr(
             tags$td(t[[2]],width="30%")
           )
-          ,
-          style=".dataTables_paginate {
-                   float: left !important;
-                   color: red !important;}"
         )
       )
     ))
