@@ -138,6 +138,12 @@ genNetwork <- function(m) {
   
   require(visNetwork)
   
+  getJSEventHandler <- function(e) {
+    f <- paste0("./src/js/",e,".js")
+    func <- JS(readChar(f, file.info(f)$size))
+    return(func)
+  }
+  
   getTitle <- function() {
     
     require(htmltools)
@@ -248,22 +254,18 @@ genNetwork <- function(m) {
   nodes <- setNodes()
   
   edges <- setNames(data.frame(matrix(ncol=3, nrow=0),stringsAsFactors=F),c("from","to","value"))
-  
   invisible(mapply(function(r,c){
     if (m[r,c]!=0) edges[nrow(edges)+1,] <<- c(rownames(m)[r],colnames(m)[c],m[r,c])
   },row(m),col(m)))
   
   #
   
-  lnodes <- data.frame(label=groups$label,color=groups$color,shape="square",
-                       title=groups$desc)
-  
-  f <- "./src/js/startStabilizing.js"
-  eventHandlersJS <- JS(readChar(f, file.info(f)$size))
-  
   network <- visNetwork(nodes,edges,
-                        main=paste0("Our statistics network (from ",min(a$date)," to ",max(a$date),")")) %>%
-    visLegend(main="group", useGroups=F,addNodes=lnodes) %>%
+                        main="Our statistics network",
+                        submain=paste0("(from ",min(a$date)," to ",max(a$date),")")) %>%
+    visLegend(main="group", useGroups=F,
+              addNodes=data.frame(label=groups$label,color=groups$color,shape="square",
+                                  title=groups$desc)) %>%
     visOptions(highlightNearest=list(enabled=T, degree=0),
                nodesIdSelection=list(enabled=T,useLabels=F),
                selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
@@ -278,68 +280,11 @@ genNetwork <- function(m) {
                      border-radius: 30px;') %>%
     visPhysics(stabilization=F,solver="forceAtlas2Based") %>%
     visNodes(font=list(strokeWidth=1)) %>%
-    visEvents(hoverNode="function(e) {
-                var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
-                networkCanvas.style.cursor = 'pointer';
-                var table0 = $('#DataTables_Table_0').DataTable();
-                var table1 = $('#DataTables_Table_1').DataTable();
-                table0.search(e.node,false,false,false).draw();
-                $('#DataTables_Table_0 caption').text('Incoming '+e.node);
-                table1.search(e.node,false,false,false).draw();
-                $('#DataTables_Table_1 caption').text('Outcoming '+e.node);
-              }",
-              blurNode="function(e) {
-                var networkCanvas = document.querySelector('[id^=\"graphhtmlwidget-\"]').getElementsByTagName('canvas')[0];
-                networkCanvas.style.cursor = 'default';
-              }",
-              selectNode="function(e) {
-                var nodeId = e.nodes[0];
-                var pos = this.getPositions([nodeId]);
-                this.moveTo({position: {x:pos[nodeId].x, y:pos[nodeId].y}});
-              }",
-              stabilized="function(e){
-                console.log('stabilized in '+e.iterations+' iterations');
-              }",
-              startStabilizing=eventHandlersJS
-#               startStabilizing=JS("function startStabilizingEvent(e) {
-#                 function sleep(x) {
-#                   return new Promise(resolve => {
-#                     setTimeout(() => {
-#                       resolve(x);
-#                     }, 2000);
-#                   });
-#                 }
-#                 async function checkSelectById(network) {
-#                   while(true) {
-#                     console.log('calling');
-#                     var result = await sleep('cc');
-#                     nodeId = window.nodeSelecthtmlwidgetSelected;
-#                     if (typeof nodeId !== 'undefined' && nodeId !== null) {
-#                       window.nodeSelecthtmlwidgetSelected=null;
-#                       var pos = network.getPositions([nodeId]);
-#                       var currentScale = network.getScale();
-#                       var targetScale = (currentScale>1.2?currentScale:1.2);
-# console.log('target scale: '+targetScale);
-#                       network.moveTo({
-#                         position: {x:pos[nodeId].x, y:pos[nodeId].y},
-#                         scale: targetScale,
-#                         animation: {
-#                           duration:2000,
-#                           easingFunction:'easeInOutCubic'
-#                         }
-#                       });
-#                       network.selectNodes([nodeId],true);
-#                       nodes=network.body.data.nodes;
-#                       //nodeGroup=nodes.get([nodeId],{fields: ['group']})[0].group;
-#                       nodeGroup=nodes._data[nodeId].group;
-#                       nodeBodyHiddenColor=nodes._data[nodeId].bodyHiddenColor;
-# nodes._data[nodeId].color=nodeBodyHiddenColor;
-# nodes.update(nodes.get(nodeId));
-#                     }
-#                   }
-#                 }
-#                 checkSelectById(this);
-#               }")
+    visEvents(hoverNode=getJSEventHandler("hoverNode"),
+              blurNode=getJSEventHandler("blurNode"),
+              selectNode=getJSEventHandler("selectNode"),
+              stabilized=getJSEventHandler("stabilized"),
+              startStabilizing=getJSEventHandler("startStabilizing")
     )
   
   invisible(apply(groups,1,function(x){
