@@ -428,13 +428,6 @@ displayNetwork <- function(n,t) {
                    * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
                    ),
         tags$script(HTML(getJSEventHandler("selectNodeById")))
-        # tags$script(JS("$( document ).ready(function() {
-        #                 var selectById = document.querySelector('[id^=\"nodeSelecthtmlwidget-\"]');
-        #                 selectById.onchange = function() {
-        #                   window.nodeSelecthtmlwidgetSelected=selectById.value;
-        #                   console.log('nodeSelecthtmlwidget: selected ' + window.nodeSelecthtmlwidgetSelected);
-        #                 };
-        #              });"))
       ),
       tags$body(
         tags$table(
