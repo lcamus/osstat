@@ -19,9 +19,11 @@ $( document ).ready(function() {
   }//manageSelectById
 
   var selectById = document.querySelector('[id^=\"nodeSelecthtmlwidget-\"]');
-  // selectById.addEventListener('onchange',function(){manageSelectById(this.value);},false);
+
   ['onchange','change'].forEach(e =>
     selectById.addEventListener(e,function(){manageSelectById(this.value);},false)
   );
+
+  //$("select#nodeSelecthtmlwidget-c70f78b0512ba786ba64 option").map(function() {return $(this).val();}).get();
 
 });

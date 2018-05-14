@@ -238,15 +238,17 @@ genNetwork <- function(m) {
   
   setNodes <- function() {
     nodes <- data.frame(id=c(colnames(m),"BEGIN"),
-                        label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
+                        # label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
+                        label=c(sub("^/(\\w{3})\\w+/","\\1",colnames(m)),"BEGIN"),
                         value=c(colSums(m),rowSums(m)[dim(m)[1]]),
                         title=getTitle(),
                         stringsAsFactors=F)
     nodes$group <- sub("^/(\\w+)/.*$","\\1",nodes$id)
     nodes[nodes$id %in% c("BEGIN","END","ERR","local"),]$group <- "event"
     # nodes[nodes$group=="event",]$label <- paste0("eve~",nodes[nodes$group=="event",]$label)
-    nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
-    nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
+    # nodes[nodes$id=="/homepage",c("group","label")] <- c("shared","sha~homepage")
+    nodes[nodes$id=="/homepage",]$group <- "shared"
+    # nodes[nodes$id=="/bankscorner/",]$label <- "ban~bankscorner"
     nodes <- nodes[unlist(lapply(groups$label,function(x) which(nodes$group %in% x))),]
     return(nodes)
   } #setNodes
