@@ -456,6 +456,6 @@ n <- genNetwork(m)
 sd <- genSrcDatatables(m,n$x$nodes)
 t <- lapply(seq_along(sd),function(x)genDatatables(sd[[x]],c("Incoming","Outcoming")[x]))
 
-displayNetwork(n,t)
+res <- displayNetwork(n,t)
 
-visSave(n, file = "network.html")
+visSave(res, file = "network.html")
