@@ -135,6 +135,9 @@ setGroup <- function() {
 groups <- setGroup()
 
 getJSEventHandler <- function(e) {
+  
+  require(htmlwidgets)
+  
   f <- paste0("./src/js/",e,".js")
   func <- JS(readChar(f, file.info(f)$size))
   return(func)
@@ -458,4 +461,4 @@ t <- lapply(seq_along(sd),function(x)genDatatables(sd[[x]],c("Incoming","Outcomi
 
 res <- displayNetwork(n,t)
 
-visSave(res, file = "network.html")
+save_html(res,"network.html")
