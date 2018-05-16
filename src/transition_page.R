@@ -1,5 +1,24 @@
 #matrix transition pageIdAction
 
+saveNetwork2html <- function (tl, file, selfcontained = T, libdir = "./lib") {
+  
+  if (is.null(libdir)) {
+    libdir <- paste(tools::file_path_sans_ext(basename(file)), 
+                    "_files", sep = "")
+  }
+  htmltools::save_html(tl, file = file, libdir = libdir)
+  if (selfcontained) {
+    if (!htmlwidgets:::pandoc_available()) {
+      stop("Saving a widget with selfcontained = TRUE requires pandoc. For details see:\n", 
+           "https://github.com/rstudio/rmarkdown/blob/master/PANDOC.md")
+    }
+    htmlwidgets:::pandoc_self_contained_html(file, "output.html")
+    unlink(libdir, recursive = TRUE)
+  }
+  return(htmltools::tags$iframe(src= file, height = "400px", width = "100%", style="border:0;"))
+  
+}
+
 extendRepositoryPage <- function() {
   
   suppressPackageStartupMessages(require(dplyr))
@@ -242,7 +261,7 @@ genNetwork <- function(m) {
   setNodes <- function() {
     nodes <- data.frame(id=c(colnames(m),"BEGIN"),
                         # label=c(sub("^/(\\w{3})\\w+/",paste0("\\1","~"),colnames(m)),"BEGIN"),
-                        label=c(sub("^/(\\w{3})\\w+/","\\1",colnames(m)),"BEGIN"),
+                        label=c(sub("^/\\w+/","",colnames(m)),"BEGIN"),
                         value=c(colSums(m),rowSums(m)[dim(m)[1]]),
                         title=getTitle(),
                         stringsAsFactors=F)
@@ -273,7 +292,8 @@ genNetwork <- function(m) {
                                   title=groups$desc)) %>%
     visOptions(highlightNearest=list(enabled=T, degree=0),
                nodesIdSelection=list(enabled=T,useLabels=F),
-               selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
+               # selectedBy=list(variable="group",selected="indicators",values=groups$label)) %>%
+               selectedBy=list(variable="group",values=groups$label)) %>%
     visInteraction(navigationButtons=T,hover=T,
                    tooltipStyle = '
                      position: fixed;
@@ -426,29 +446,32 @@ displayNetwork <- function(n,t) {
   require(visNetwork)
   require(htmltools)
   
-  browsable(
-    tagList(list(
+  # browsable(
+  withTags(tagList(list(
+      tags$html(
       tags$head(
-        tags$style('td.figure {font-weight:bold; text-align: center;}
-                   * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
-                   ),
-        tags$script(HTML(getJSEventHandler("selectNodeById")))
-      ),
-      tags$body(
-        tags$table(
-          tags$tr(
-            tags$td(n,rowspan=2,width="70%",valign="top")
-            ,
-            tags$td(t[[1]],width="30%")
-          )
-          ,
-          tags$tr(
-            tags$td(t[[2]],width="30%")
-          )
+          tags$style('td.figure {font-weight:bold; text-align: center;}
+                     * {font-family: "Century Gothic", CenturyGothic, AppleGothic, sans-serif !important;}'
+                     ),
+          tags$script(HTML(getJSEventHandler("selectNodeById")))
         )
+      ,
+        tags$body(
+          tags$table(
+            tags$tr(
+              tags$td(n,rowspan=2,width="70%",valign="top")
+              ,
+              tags$td(t[[1]],width="30%")
+            )
+            ,
+            tags$tr(
+              tags$td(t[[2]],width="30%")
+            )
+          )
       )
-    ))
-  )
+      )
+    )))
+  # )
   
 } #displayNetwork
 
@@ -457,8 +480,11 @@ aa <- extendActions(pr2)
 m <- genTransitionMatrix(pr2,aa)
 n <- genNetwork(m)
 sd <- genSrcDatatables(m,n$x$nodes)
-t <- lapply(seq_along(sd),function(x)genDatatables(sd[[x]],c("Incoming","Outcoming")[x]))
+tbl <- lapply(seq_along(sd),function(x)genDatatables(sd[[x]],c("Incoming","Outcoming")[x]))
 
-res <- displayNetwork(n,t)
+res <- displayNetwork(n,tbl)
+
+browsable(res)
 
 save_html(res,"network.html")
+
