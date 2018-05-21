@@ -35,3 +35,25 @@ response <- as.factor(unlist(train[,"comeback"]))
 library(randomForest)
 rf <- randomForest(x = predictors, y = response)
 
+## once model done, we run it using test data and compare results to reality
+predictor_test <- as.data.frame(test[,names(model_data)[!names(model_data) %in% c("idVisit","comeback")]],stringsAsFactors=F)
+response_test <- as.factor(unlist(test[,"comeback"]))
+
+## check result on test set
+prediction <- predict(rf, predictor_test)
+predictor_test$correct <- as.character(prediction) == as.character(response_test)
+
+## How many were correct?
+table(as.character(prediction) == as.character(response_test)) 
+accuracy <- sum(predictor_test$correct) / nrow(predictor_test)
+
+####### glm 
+model.glm <- glm(comeback ~.,family=binomial(link='logit'),data=train[,tail(names(train),-1)])
+predictor_test$correct <- NULL
+prediction.glm <- predict(model.glm, predictor_test)
+# fitted.results <- ifelse(fitted.results > 0.5,1,0)
+predictor_test$correct <- as.character(prediction.glm) == as.character(response_test)
+table(as.character(prediction.glm) == as.character(response_test)) 
+accuracy <- sum(predictor_test$correct) / nrow(predictor_test)
+
+
