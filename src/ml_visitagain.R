@@ -21,6 +21,7 @@ vv$date <- as.Date(vv$date)
 model_data <- left_join(model_data,vv,by="idVisit") %>% distinct()
 vv <- vv %>% group_by(visitorId) %>% distinct() %>% arrange(visitorId,date) %>% summarise(last.visit=last(date))
 model_data <- left_join(model_data,vv,by="visitorId") %>% mutate(comeback=as.numeric(last.visit-date>0))
+model_data <- model_data[,names(model_data)[!names(model_data) %in% c("visitorId","date","last.visit")]]
 
 
 smp_size <- floor(0.75*nrow(model_data))
@@ -28,4 +29,9 @@ train_ind <- sample(seq_len(nrow(model_data)),size=smp_size)
 train <- model_data[train_ind,]
 test <- model_data[-train_ind,]
 
-predictors <- train[,]
+predictors <- as.data.frame(train[,names(model_data)[!names(model_data) %in% c("idVisit","comeback")]],stringsAsFactors=F)
+response <- as.factor(unlist(train[,"comeback"]))
+
+library(randomForest)
+rf <- randomForest(x = predictors, y = response)
+
