@@ -15,6 +15,15 @@ model_data <- aa %>% spread(pg,count) %>%
   select(matches("(idVisit)|(^/)")) %>%
   summarise_all(sum,na.rm=T)
 
+#get if visitor come back again:
+vv <- v[,c("idVisit","visitorId","date")]
+vv$date <- as.Date(vv$date)
+model_data <- left_join(model_data,vv,by="idVisit") %>% distinct()
+vv <- vv %>% group_by(visitorId) %>% distinct() %>% summarise(last.visit=as.Date(last(date)))
+model_data <- left_join(model_data,vv,by="visitorId") %>% mutate(comeback=last.visit-date)
+
+
+
 smp_size <- floor(0.75*nrow(model_data))
 train_ind <- sample(seq_len(nrow(model_data)),size=smp_size)
 train <- model_data[train_ind,]
