@@ -476,6 +476,7 @@ displayNetwork <- function(n,t) {
 } #displayNetwork
 
 pr2 <- extendRepositoryPage()
+save(pr2,file="./data/pr2.RData")
 aa <- extendActions(pr2)
 m <- genTransitionMatrix(pr2,aa)
 n <- genNetwork(m)
