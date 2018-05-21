@@ -19,9 +19,8 @@ model_data <- aa %>% spread(pg,count) %>%
 vv <- v[,c("idVisit","visitorId","date")]
 vv$date <- as.Date(vv$date)
 model_data <- left_join(model_data,vv,by="idVisit") %>% distinct()
-vv <- vv %>% group_by(visitorId) %>% distinct() %>% summarise(last.visit=as.Date(last(date)))
-model_data <- left_join(model_data,vv,by="visitorId") %>% mutate(comeback=last.visit-date)
-
+vv <- vv %>% group_by(visitorId) %>% distinct() %>% arrange(visitorId,date) %>% summarise(last.visit=last(date))
+model_data <- left_join(model_data,vv,by="visitorId") %>% mutate(comeback=as.numeric(last.visit-date>0))
 
 
 smp_size <- floor(0.75*nrow(model_data))
