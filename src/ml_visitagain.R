@@ -32,28 +32,35 @@ test <- model_data[-train_ind,]
 predictors <- as.data.frame(train[,names(model_data)[!names(model_data) %in% c("idVisit","comeback")]],stringsAsFactors=F)
 response <- as.factor(unlist(train[,"comeback"]))
 
-library(randomForest)
-rf <- randomForest(x = predictors, y = response)
+#different models:
 
-## once model done, we run it using test data and compare results to reality
-predictor_test <- as.data.frame(test[,names(model_data)[!names(model_data) %in% c("idVisit","comeback")]],stringsAsFactors=F)
+predictor.var <- names(model_data)[!names(model_data) %in% c("idVisit","comeback")]
+predictor_test <- as.data.frame(test[,predictor.var],stringsAsFactors=F)
 response_test <- as.factor(unlist(test[,"comeback"]))
 
+model.rf <- randomForest::randomForest(x = predictors, y = response)
+model.glm <- glm(comeback ~.,family=binomial,data=train[,c(predictor.var,"comeback")])
+# models <- list(model.rf,model.glm)
+
 ## check result on test set
-prediction <- predict(rf, predictor_test)
-predictor_test$correct <- as.character(prediction) == as.character(response_test)
+# prediction <- lapply(models,function(x)predict(x, predictor_test))
+prediction.rf <- predict(model.rf,predictor_test)
+prediction.glm <- ifelse(predict(model.glm, predictor_test)>0.5,1,0)
+correct.rf <- prediction.rf==response_test
+# correct <- lapply(models,function(x)as.character(x)==as.character(response_test))
+# predictor_test$correct <- as.character(prediction) == as.character(response_test)
 
 ## How many were correct?
 table(as.character(prediction) == as.character(response_test)) 
-accuracy <- sum(predictor_test$correct) / nrow(predictor_test)
+accuracy.rf <- sum(predictor_test$correct) / nrow(predictor_test)
 
 ####### glm 
-model.glm <- glm(comeback ~.,family=binomial(link='logit'),data=train[,tail(names(train),-1)])
+
 predictor_test$correct <- NULL
-prediction.glm <- predict(model.glm, predictor_test)
+
 # fitted.results <- ifelse(fitted.results > 0.5,1,0)
 predictor_test$correct <- as.character(prediction.glm) == as.character(response_test)
 table(as.character(prediction.glm) == as.character(response_test)) 
-accuracy <- sum(predictor_test$correct) / nrow(predictor_test)
+accuracy.glm <- sum(predictor_test$correct) / nrow(predictor_test)
 
 
