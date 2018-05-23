@@ -39,28 +39,13 @@ predictor_test <- as.data.frame(test[,predictor.var],stringsAsFactors=F)
 response_test <- as.factor(unlist(test[,"comeback"]))
 
 model.rf <- randomForest::randomForest(x = predictors, y = response)
-model.glm <- glm(comeback ~.,family=binomial,data=train[,c(predictor.var,"comeback")])
-# models <- list(model.rf,model.glm)
+model.glm <- glm(comeback~.,family=binomial,data=train[,c(predictor.var,"comeback")])
+model.rpart <- rpart::rpart(comeback~.,data=train[,c(predictor.var,"comeback")])
 
-## check result on test set
-# prediction <- lapply(models,function(x)predict(x, predictor_test))
-prediction.rf <- predict(model.rf,predictor_test)
-prediction.glm <- ifelse(predict(model.glm, predictor_test)>0.5,1,0)
-correct.rf <- prediction.rf==response_test
-# correct <- lapply(models,function(x)as.character(x)==as.character(response_test))
-# predictor_test$correct <- as.character(prediction) == as.character(response_test)
+prediction <- as.data.frame(matrix(nrow=nrow(test),ncol=0),stringsAsFactors=F)
+prediction$rf <- predict(model.rf,predictor_test)
+prediction$glm <- ifelse(predict(model.glm, predictor_test)>0.5,1,0)
 
-## How many were correct?
-table(as.character(prediction) == as.character(response_test)) 
-accuracy.rf <- sum(predictor_test$correct) / nrow(predictor_test)
-
-####### glm 
-
-predictor_test$correct <- NULL
-
-# fitted.results <- ifelse(fitted.results > 0.5,1,0)
-predictor_test$correct <- as.character(prediction.glm) == as.character(response_test)
-table(as.character(prediction.glm) == as.character(response_test)) 
-accuracy.glm <- sum(predictor_test$correct) / nrow(predictor_test)
-
+accuracy <- lapply(names(prediction),function(x)sum(prediction[,x]==response_test)/nrow(predictor_test))
+names(accuracy) <- names(prediction)
 
