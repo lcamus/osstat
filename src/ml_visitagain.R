@@ -46,14 +46,14 @@ models <- list(rf=model.rf,glm=model.glm,rpart=model.rpart)
 # prediction <- as.data.frame(matrix(nrow=nrow(test),ncol=0),stringsAsFactors=F)
 prediction <- lapply(models,function(x){
   res <- predict(x, predictor_test)
-  res <- ifelse(is.factor(res),as.numeric(levels(res))[res],res)
+  if (is.factor(res)) res <- as.numeric(levels(res))[res]
   res <- ifelse(res>0.5,1,0)
   return(res)
   })
-prediction$rf <- predict(model.rf,predictor_test)
-prediction$glm <- ifelse(predict(model.glm, predictor_test)>0.5,1,0)
-prediction$rpart <- ifelse(predict(model.rpart, predictor_test)>0.5,1,0)
+# prediction$rf <- predict(model.rf,predictor_test)
+# prediction$glm <- ifelse(predict(model.glm, predictor_test)>0.5,1,0)
+# prediction$rpart <- ifelse(predict(model.rpart, predictor_test)>0.5,1,0)
 
-accuracy <- lapply(names(prediction),function(x)sum(prediction[,x]==response_test)/nrow(predictor_test))
+accuracy <- lapply(prediction,function(x)sum(x==response_test)/nrow(predictor_test))
 names(accuracy) <- names(prediction)
 
