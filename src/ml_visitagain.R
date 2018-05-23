@@ -34,26 +34,24 @@ response <- as.factor(unlist(train[,"comeback"]))
 
 #different models:
 
-predictor.var <- names(model_data)[!names(model_data) %in% c("idVisit","comeback")]
+# predictor.var <- names(model_data)[!names(model_data) %in% c("idVisit","comeback")]
 predictor_test <- as.data.frame(test[,predictor.var],stringsAsFactors=F)
 response_test <- as.factor(unlist(test[,"comeback"]))
 
 model.rf <- randomForest::randomForest(x = predictors, y = response)
-model.glm <- glm(comeback~.,family=binomial,data=train[,c(predictor.var,"comeback")])
-model.rpart <- rpart::rpart(comeback~.,data=train[,c(predictor.var,"comeback")])
-models <- list(rf=model.rf,glm=model.glm,rpart=model.rpart)
+model.glm <- glm(comeback~.,family=binomial,data=train[-1])
+model.rpart <- rpart::rpart(comeback~.,data=train[-1])
+model.lm <- lm(comeback~.,data=train[-1])
+models <- list(lm=model.lm,glm=model.glm,rpart=model.rpart,rf=model.rf)
 
-# prediction <- as.data.frame(matrix(nrow=nrow(test),ncol=0),stringsAsFactors=F)
 prediction <- lapply(models,function(x){
   res <- predict(x, predictor_test)
   if (is.factor(res)) res <- as.numeric(levels(res))[res]
   res <- ifelse(res>0.5,1,0)
   return(res)
   })
-# prediction$rf <- predict(model.rf,predictor_test)
-# prediction$glm <- ifelse(predict(model.glm, predictor_test)>0.5,1,0)
-# prediction$rpart <- ifelse(predict(model.rpart, predictor_test)>0.5,1,0)
 
 accuracy <- lapply(prediction,function(x)sum(x==response_test)/nrow(predictor_test))
 names(accuracy) <- names(prediction)
+lapply(accuracy,round,3)
 
