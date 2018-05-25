@@ -38,11 +38,13 @@ response <- as.factor(unlist(train[,"comeback"]))
 predictor_test <- as.data.frame(test[,predictor.var],stringsAsFactors=F)
 response_test <- as.factor(unlist(test[,"comeback"]))
 
+require(kernlab)
 model.rf <- randomForest::randomForest(x = predictors, y = response)
 model.glm <- glm(comeback~.,family=binomial,data=train[-1])
 model.rpart <- rpart::rpart(comeback~.,data=train[-1])
 model.lm <- lm(comeback~.,data=train[-1])
-models <- list(lm=model.lm,glm=model.glm,rpart=model.rpart,rf=model.rf)
+model.ksvm <- ksvm(comeback~.,data=train[-1],type="C-svc",kernel="vanilladot",C=1,cross=10,scaled=FALSE)
+models <- list(lm=model.lm,ksvm=model.ksvm,glm=model.glm,rpart=model.rpart,rf=model.rf)
 
 prediction <- lapply(models,function(x){
   res <- predict(x, predictor_test)
