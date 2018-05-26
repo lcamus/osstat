@@ -10,18 +10,14 @@ aa[is.na(aa$pg),]$pg<- "ERR"
 
 aa$count <- 1
 require(tidyr)
-model_data <- aa %>% spread(pg,count) %>%
-  group_by(idVisit) %>%
-  select(matches("(idVisit)|(^/)")) %>%
-  summarise_all(sum,na.rm=T)
+model_data <- aa %>% spread(pg,count,fill=0) %>% 
+  group_by(idVisit) %>% mutate_at(.funs=cumsum,.vars=vars(matches("/"))) %>%
+  select(matches("(idVisit)|(step)|(^/)"))
 
 #get if visitor come back again:
-vv <- v[,c("idVisit","visitorId","date")]
-vv$date <- as.Date(vv$date)
-model_data <- left_join(model_data,vv,by="idVisit") %>% distinct()
-vv <- vv %>% group_by(visitorId) %>% distinct() %>% arrange(visitorId,date) %>% summarise(last.visit=last(date))
-model_data <- left_join(model_data,vv,by="visitorId") %>% mutate(comeback=as.numeric(last.visit-date>0))
-model_data <- model_data[,names(model_data)[!names(model_data) %in% c("visitorId","date","last.visit")]]
+model_data <- model_data %>% mutate(continue=if_else(lead(step)==1,0,1,missing=0)) 
+model_data <- model_data %>% ungroup %>% select(-idVisit,-step)
+# model_data <- model_data[,names(model_data)[!names(model_data) %in% c("visitorId","step")]]
 
 smp_size <- floor(0.75*nrow(model_data))
 train_ind <- sample(seq_len(nrow(model_data)),size=smp_size)
