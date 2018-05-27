@@ -24,23 +24,22 @@ train_ind <- sample(seq_len(nrow(model_data)),size=smp_size)
 train <- model_data[train_ind,]
 test <- model_data[-train_ind,]
 
-predictors <- as.data.frame(train[,names(model_data)[!names(model_data) %in% c("idVisit","comeback")]],stringsAsFactors=F)
-response <- as.factor(unlist(train[,"comeback"]))
+predictors <- as.data.frame(select(train,-continue),stringsAsFactors=F)
+response <- as.factor(unlist(train[,"continue"]))
 
 #different models:
 
-# predictor.var <- names(model_data)[!names(model_data) %in% c("idVisit","comeback")]
-predictor_test <- as.data.frame(test[,predictor.var],stringsAsFactors=F)
-response_test <- as.factor(unlist(test[,"comeback"]))
+predictor_test <- as.data.frame(select(test,-continue),stringsAsFactors=F)
+response_test <- as.factor(unlist(test[,"continue"]))
 
 require(kernlab)
 model.rf <- randomForest::randomForest(x = predictors, y = response)
-model.glm <- glm(comeback~.,family=binomial,data=train[-1])
-model.rpart <- rpart::rpart(comeback~.,data=train[-1])
-model.lm <- lm(comeback~.,data=train[-1])
-model.ksvm <- ksvm(comeback~.,data=train[-1],type="C-svc",kernel="vanilladot",C=1,cross=10,scaled=FALSE)
+model.glm <- glm(continue~.,family=binomial,data=train)
+model.rpart <- rpart::rpart(continue~.,data=train)
+model.lm <- lm(continue~.,data=train)
+model.ksvm <- ksvm(continue~.,data=train,type="C-svc",kernel="vanilladot",C=1,cross=10,scaled=FALSE)
 models <- list(lm=model.lm,ksvm=model.ksvm,glm=model.glm,rpart=model.rpart,rf=model.rf)
-save(models,file="ml_visitagain.RData")
+save(models,file="data/islastaction.RData")
 
 prediction <- lapply(models,function(x){
   res <- predict(x, predictor_test)
