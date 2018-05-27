@@ -12,31 +12,32 @@ aa$count <- 1
 require(tidyr)
 model_data <- aa %>% spread(pg,count,fill=0) %>% 
   group_by(idVisit) %>% mutate_at(.funs=cumsum,.vars=vars(matches("/"))) %>%
-  select(matches("(idVisit)|(step)|(^/)"))
+  select(matches("(idVisit)|(step)|(pageIdAction)|(^/)"))
 
-#get if visitor end his visit:
-model_data <- model_data %>% mutate(continue=if_else(lead(step)==1,0,1,missing=0)) 
-model_data <- model_data %>% ungroup %>% select(-idVisit,-step)
+#get if visitor reach the target:
+target.pages <- pr2[grep("indicators/financing-and-investment-dynamics",pr2$pg),]$pageIdAction
+model_data <- model_data %>% mutate(target=if_else(lead(pageIdAction) %in% target.pages,1,0,missing=0)) 
+model_data <- model_data %>% ungroup %>% select(-idVisit,-step,-pageIdAction)
 
 smp_size <- floor(0.75*nrow(model_data))
 train_ind <- sample(seq_len(nrow(model_data)),size=smp_size)
 train <- model_data[train_ind,]
 test <- model_data[-train_ind,]
 
-predictors <- as.data.frame(select(train,-continue),stringsAsFactors=F)
-response <- as.factor(unlist(train[,"continue"]))
+predictors <- as.data.frame(select(train,-target),stringsAsFactors=F)
+response <- as.factor(unlist(train[,"target"]))
 
 #different models:
 
-predictor_test <- as.data.frame(select(test,-continue),stringsAsFactors=F)
-response_test <- as.factor(unlist(test[,"continue"]))
+predictor_test <- as.data.frame(select(test,-target),stringsAsFactors=F)
+response_test <- as.factor(unlist(test[,"target"]))
 
 require(kernlab)
 model.rf <- randomForest::randomForest(x = predictors, y = response)
-model.glm <- glm(continue~.,family=binomial,data=train)
-model.rpart <- rpart::rpart(continue~.,data=train)
-model.lm <- lm(continue~.,data=train)
-model.ksvm <- ksvm(continue~.,data=train,type="C-svc",kernel="vanilladot",C=1,cross=10,scaled=FALSE)
+model.glm <- glm(target~.,family=binomial,data=train)
+model.rpart <- rpart::rpart(target~.,data=train)
+model.lm <- lm(target~.,data=train)
+model.ksvm <- ksvm(target~.,data=train,type="C-svc",kernel="vanilladot",C=1,cross=10,scaled=FALSE)
 models <- list(lm=model.lm,ksvm=model.ksvm,glm=model.glm,rpart=model.rpart,rf=model.rf)
 save(models,file="data/islastaction.RData")
 
