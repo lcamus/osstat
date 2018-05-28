@@ -39,7 +39,7 @@ model.rpart <- rpart::rpart(target~.,data=train)
 model.lm <- lm(target~.,data=train)
 model.ksvm <- ksvm(target~.,data=train,type="C-svc",kernel="vanilladot",C=1,cross=10,scaled=FALSE)
 models <- list(lm=model.lm,ksvm=model.ksvm,glm=model.glm,rpart=model.rpart,rf=model.rf)
-save(models,file="data/islastaction.RData")
+save(models,file="data/isvisittarget.RData")
 
 prediction <- lapply(models,function(x){
   res <- predict(x, predictor_test)
