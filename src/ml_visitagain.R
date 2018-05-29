@@ -1,11 +1,12 @@
 #get ref data
 load("os-visits+actions_2017-10-02_2018-04-15.RData")
-load("./data/pr2.RData")
+load("os-page_repository_2017-10-02-2018-04-15")
+# load("./data/pr2.RData")
 
 #extend actions
 require(dplyr)
 aa <- a[a$type!="search",]
-aa <- left_join(aa,pr2[,c("pageIdAction","pg")],by="pageIdAction")
+aa <- left_join(aa,pr[,c("pageIdAction","pg")],by="pageIdAction")
 aa[is.na(aa$pg),]$pg<- "ERR"
 
 aa$count <- 1
