@@ -10,10 +10,10 @@ output:
 
 suppressMessages(suppressWarnings(library(highcharter)))
 library(ISOcodes)
-#suppressMessages(suppressWarnings(library(dplyr)))
 suppressMessages(require(viridis))
-if (!exists("d")) load("data/os-visits+actions_2017-10-02_2018-05-29.RData")
-v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
+load("../data/os-visits+actions_2017-10-02_2018-05-29.RData")
+load("../data/os-aggregates_2017-10-02-2018-05-29.RData")
+# v <- d[["Live"]][["getLastVisitsDetails:Visits"]]
 
 ```
 
@@ -80,14 +80,14 @@ c_dailyvisits <- function(df, lib) {
   
 }
 
-data <- d[["VisitsSummary"]][["get"]]
+data <- ag[["VisitsSummary"]][["get"]]
 data <- data[order(data$date),]
 data <- data[data$date>="2018-03-01" & data$date<="2018-05-29",]
 data$nb_visits <- as.numeric(data$nb_visits)
 
 c_dv_3m <- c_dailyvisits(data,"in daily visits for 3 months")
 
-data <- d[["VisitsSummary"]][["get"]]
+data <- ag[["VisitsSummary"]][["get"]]
 data <- data[order(data$date),]
 data <- data[data$date>="2017-10-02" & data$date<="2018-05-29",]
 data$nb_visits <- as.numeric(data$nb_visits)
@@ -570,7 +570,7 @@ c2()
 
 ```{r echo=FALSE}
 
-vt <- d[["VisitTime"]][["getVisitInformationPerLocalTime"]]
+vt <- ag[["VisitTime"]][["getVisitInformationPerLocalTime"]]
 vt <- vt[vt$date>=min(v$date),]
 vt$nb_visits <- as.numeric(vt$nb_visits)
 vt$nb_actions <- as.numeric(vt$nb_actions)
@@ -589,7 +589,7 @@ c_vh_v <- highchart() %>%
                 hcaes(name = label, y = nb_visits), showInLegend = T) %>%
   hc_add_theme(hc_theme_elementary())
 
-vt_d <- d[["VisitTime"]][["getByDayOfWeek"]]
+vt_d <- ag[["VisitTime"]][["getByDayOfWeek"]]
 vt_d <- vt_d[vt_d$date>=min(v$date),]
 vt_d$nb_visits <- as.numeric(vt_d$nb_visits)
 
@@ -631,7 +631,7 @@ clean <- function(begin,end,agreg) {
   
   if (missing(agreg)) agreg <- T
   
-  p <- d[["Actions"]][["getPageUrls"]]
+  p <- ag[["Actions"]][["getPageUrls"]]
   p <- p[p$date>=begin & p$date<=end,]
   p$label <- as.character(p$label)
   p$cat1 <- sub("\\?.*$","",p$label) 
